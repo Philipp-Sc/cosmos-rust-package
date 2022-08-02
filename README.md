@@ -1,7 +1,7 @@
 # cosmos-rust-package
 Package used by the cosmos-rust-interface. Makes direct use of cosmos-rust (cosmos‑sdk‑proto, osmosis-proto, cosmrs).
 
-## developer notes
+## Developer notes
 
 - cosmos-rust-package/src/api/core/cosmos/channels/mod.rs 
 `supported blockchains with channels to gRPC nodes`
@@ -17,3 +17,8 @@ Package used by the cosmos-rust-interface. Makes direct use of cosmos-rust (cosm
 
 - cosmos-rust-package/src/api/custom/mod.rs 
 `custom api, used to process the resonse first, returns serde_json::Value type`
+
+### Goals
+
+1. Simple API to query and broadcast transactions via gRPC
+2. Practical API for cosmos-rust-interface & cosmos-rust-bot
