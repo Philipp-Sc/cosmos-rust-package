@@ -21,4 +21,4 @@ Package used by the cosmos-rust-interface. Makes direct use of cosmos-rust (cosm
 ### Goals
 
 1. Simple API to query and broadcast transactions via gRPC
-2. Practical API for cosmos-rust-interface & cosmos-rust-bot
+2. Custom API for cosmos-rust-interface & cosmos-rust-bot
