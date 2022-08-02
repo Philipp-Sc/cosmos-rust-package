@@ -1,0 +1,59 @@
+[package]
+name = "cosmos-rust-package"
+authors = ["Philipp Schlütermann <philipp.schluetermann@udo.edu>"]
+version = "0.1.0"
+edition = "2021"
+
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+cosmwasm-std = "*"
+cw20 = { package = "cw20", version = "*" }
+cosmrs = {path = "/home/user/Documents/cosmos-rust-development/cosmrs",  features = ["cosmwasm"] }
+cosmos-sdk-proto = { path = "/home/user/Documents/cosmos-rust-development/cosmos-sdk-proto", features = ["grpc-transport", "cosmwasm"] }
+osmosis-proto = { path = "/home/user/Documents/cosmos-rust-development/osmosis-proto", features = ["grpc-transport", "osmosis"], optional = true }
+
+prost = "0.10"
+prost-types = "0.10"
+tonic = { version = "0.7.2", features = ["transport"] }
+tokio = { version = "1.4", features = ["full"] }
+anyhow = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+rust_decimal = "1.12.2"
+secp256k1 = { version = "0.20.3", default-features = false }
+reqwest = "0.11.6"
+bitcoin = "0.27.1"
+hkd32 = { version = "0.5.0", features = ["bip39", "mnemonic", "bech32"] }
+ed25519-dalek = { version = "1", features = ["serde"] }
+rust-crypto = "^0.2"
+rand_core = { version = "0.5", default-features = false }
+hex = "0.4.3"
+base64 = "0.13.0"
+log = "0.4.14"
+thiserror = { version = "1.0.21" }
+eyre = "0.6"
+
+[features]
+default = ["cosmos","osmosis"]
+cosmos = []
+osmosis = ["osmosis-proto"]
+
+[profile.release]
+# Enable link-time optimization, eliminates more code and inlines across crate boundaries.
+# Default: false
+lto = true
+
+# codegen-units of 1 gives best optimization, but disables parallel building.
+# Default: 16
+codegen-units = 1
+
+# Includes debug information in release builds. Necessary for profiling. Does not
+# slow down the executable.
+debug = true
+
+# The default optimization level is 3 for release mode builds.
+# 0 means disable optimization and is the default for debug mode buids.
+# (Setting opt-level=1 for debug builds is a good way of speeding them up a bit.)
+# "s" means optimize for size, "z" reduces size even more.
+opt-level = 3
