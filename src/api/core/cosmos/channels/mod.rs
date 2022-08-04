@@ -4,11 +4,17 @@ use std::time::Duration;
 use cosmos_sdk_proto::cosmwasm::wasm::v1::query_client::QueryClient;
 
 
-pub async fn channel(blockchain: &str) -> anyhow::Result<Channel> {
+#[derive(Debug, Clone)]
+pub enum SupportedBlockchain {
+    Terra,
+    Osmosis,
+}
+
+pub async fn channel(blockchain: SupportedBlockchain) -> anyhow::Result<Channel> {
     match blockchain {
-        "terra" => terra().await,
-        "osmosis" => osmosis().await,
-        _ => Err(anyhow::anyhow!(format!("Error: {} is not a supported cosmos blockchain!",blockchain))),
+        SupportedBlockchain::Terra => terra().await,
+        SupportedBlockchain::Osmosis => osmosis().await,
+        _ => Err(anyhow::anyhow!(format!("Error: {:?} is not a supported cosmos blockchain!",blockchain))),
     }
 }
 
