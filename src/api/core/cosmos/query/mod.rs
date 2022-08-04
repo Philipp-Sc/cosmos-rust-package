@@ -20,19 +20,9 @@ use cosmos_sdk_proto::cosmos::gov::v1beta1::query_client::QueryClient as GovQuer
 use cosmos_sdk_proto::cosmos::gov::v1beta1::{QueryProposalRequest, QueryProposalsRequest, QueryProposalsResponse};
 
 pub async fn get_proposals(channel: Channel, query_proposal_request: QueryProposalsRequest) -> anyhow::Result<QueryProposalsResponse> {
-    /*
-    StatusNil           ProposalStatus = 0x00
-    StatusDepositPeriod ProposalStatus = 0x01  // Proposal is submitted. Participants can deposit on it but not vote
-    StatusVotingPeriod  ProposalStatus = 0x02  // MinDeposit is reached, participants can vote
-    StatusPassed        ProposalStatus = 0x03  // Proposal passed and successfully executed
-    StatusRejected      ProposalStatus = 0x04  // Proposal has been rejected
-    StatusFailed        ProposalStatus = 0x05  // Proposal passed but failed execution
-    */
     let res = GovQueryClient::new(channel).proposals(query_proposal_request).await?.into_inner();
     Ok(res)
 }
-
-
 
 pub async fn get_contract_info(channel: Channel, address: String) -> anyhow::Result<QueryContractInfoResponse> {
     let res = QueryClient::new(channel).contract_info(QueryContractInfoRequest { address: address }).await?.into_inner();

@@ -16,7 +16,7 @@ Package used by the cosmos-rust-interface. Makes direct use of cosmos-rust (cosm
 `osmosis query interface, returns a proto type`
 
 - cosmos-rust-package/src/api/custom/mod.rs 
-`custom api, used to process the resonse first, returns serde_json::Value type`
+`custom api, extend the response object, returns a new custom type`
 
 ### Goals
 
