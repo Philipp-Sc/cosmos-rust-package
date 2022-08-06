@@ -2,12 +2,33 @@ use tonic::transport::channel::Channel;
 use std::time::Duration;
 
 use cosmos_sdk_proto::cosmwasm::wasm::v1::query_client::QueryClient;
-
+use std::fmt::{self, Debug, Display};
 
 #[derive(Debug, Clone)]
 pub enum SupportedBlockchain {
     Terra,
     Osmosis,
+}
+impl SupportedBlockchain {
+    pub fn new(name: &str) -> SupportedBlockchain {
+        match name {
+            "terra" => SupportedBlockchain::Terra,
+            "osmosis" => SupportedBlockchain::Osmosis,
+            _ => panic!(),
+        }
+
+    }
+}
+
+impl fmt::Display for SupportedBlockchain {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let prefix = match self {
+            SupportedBlockchain::Terra => "terra",
+            SupportedBlockchain::Osmosis => "osmo",
+            _ => "unknown",
+        };
+        write!(f, "{}", prefix)
+    }
 }
 
 pub async fn channel(blockchain: SupportedBlockchain) -> anyhow::Result<Channel> {

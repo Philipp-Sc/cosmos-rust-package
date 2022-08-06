@@ -401,8 +401,10 @@ mod test {
     #[test]
     pub fn public_key_from_seed_phrase() -> anyhow::Result<()> {
         let pub_key = super::public_key_from_seed_phrase("notice oak worry limit wrap speak medal online prefer cluster roof addict wrist behave treat actual wasp year salad speed social layer crew genius".to_string())?;
-        /*println!("TEST: {}", "public_key_from_seed_phrase(seed_phrase)");
-        println!("{:?}", &pub_key);*/
+        /*println!("TEST: {}", "public_key_from_seed_phrase(seed_phrase)");*/
+        println!("{:?}", &pub_key);
+        let account = pub_key.account("terra")?;
+        println!("{:?}", &account);
         Ok(())
     }
 }
