@@ -1,6 +1,19 @@
+
+use std::hash::{Hash, Hasher};
+use prost_types::Timestamp;
 use crate::api::core::*;
 use crate::api::core::cosmos::channels::SupportedBlockchain;
 
+use strum_macros::EnumIter;
+use std::string::ToString;
+use std::time::SystemTime;
+use strum_macros;
+
+use chrono::{NaiveDateTime, NaiveDate};
+use chrono::{DateTime, TimeZone, Utc};
+use cosmos_sdk_proto::cosmos::gov::v1beta1::TallyResult;
+
+#[derive(strum_macros::ToString,Debug,Clone,PartialEq,EnumIter)]
 pub enum ProposalStatus { /*
     StatusNil           ProposalStatus = 0x00
     StatusDepositPeriod ProposalStatus = 0x01  // Proposal is submitted. Participants can deposit on it but not vote
@@ -17,6 +30,16 @@ pub enum ProposalStatus { /*
     StatusFailed = 0x05
 }
 
+
+#[derive(strum_macros::ToString,Debug,Clone,PartialEq,EnumIter)]
+pub enum ProposalTime {
+    SubmitTime,
+    DepositEndTime,
+    VotingStartTime,
+    VotingEndTime,
+    LatestTime
+}
+
 impl ProposalStatus {
     pub fn new(name: &str) -> ProposalStatus {
         match name {
@@ -31,52 +54,160 @@ impl ProposalStatus {
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum Proposal{
+#[derive(strum_macros::ToString,Debug, Clone)]
+pub enum ProposalContent {
     TextProposal(cosmos_sdk_proto::cosmos::gov::v1beta1::TextProposal),
     CommunityPoolSpendProposal(cosmos_sdk_proto::cosmos::distribution::v1beta1::CommunityPoolSpendProposal),
     ParameterChangeProposal(cosmos_sdk_proto::cosmos::params::v1beta1::ParameterChangeProposal),
     SoftwareUpgradeProposal(cosmos_sdk_proto::cosmos::upgrade::v1beta1::SoftwareUpgradeProposal),
     ClientUpdateProposal(cosmos_sdk_proto::ibc::core::client::v1::ClientUpdateProposal),
     UpdatePoolIncentivesProposal(osmosis_proto::osmosis::poolincentives::v1beta1::UpdatePoolIncentivesProposal),
-    UnknownProposalType,
+    StoreCodeProposal(cosmos_sdk_proto::cosmwasm::wasm::v1::StoreCodeProposal),
+    UnknownProposalType(String),
 }
 
 #[derive(Debug, Clone)]
-pub struct ProposalExt(cosmos_sdk_proto::cosmos::gov::v1beta1::Proposal);
+pub struct ProposalExt {
+    pub blockchain: SupportedBlockchain,
+    pub status: ProposalStatus,
+    pub proposal: cosmos_sdk_proto::cosmos::gov::v1beta1::Proposal,
+    pub content: ProposalContent,
+}
 
-// Implementation block, all `ProposalExt` associated functions & methods go in here
+impl Hash for ProposalExt {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.blockchain.to_string().hash(state);
+        self.proposal.proposal_id.hash(state);
+    }
+}
+
 impl ProposalExt {
-    pub fn content(&self) -> Proposal {
-        let p = self.0.content.as_ref().unwrap();
-        if p.type_url == "/cosmos.gov.v1beta1.TextProposal" {
-            let t: cosmos_sdk_proto::cosmos::gov::v1beta1::TextProposal = cosmos_sdk_proto::traits::MessageExt::from_any(p).unwrap();
-            Proposal::TextProposal(t)
-        } else if p.type_url == "/cosmos.distribution.v1beta1.CommunityPoolSpendProposal" {
-            let t: cosmos_sdk_proto::cosmos::distribution::v1beta1::CommunityPoolSpendProposal = cosmos_sdk_proto::traits::MessageExt::from_any(p).unwrap();
-            Proposal::CommunityPoolSpendProposal(t)
-        } else if p.type_url == "/cosmos.params.v1beta1.ParameterChangeProposal" {
-            let t: cosmos_sdk_proto::cosmos::params::v1beta1::ParameterChangeProposal = cosmos_sdk_proto::traits::MessageExt::from_any(p).unwrap();
-            Proposal::ParameterChangeProposal(t)
-        } else if p.type_url == "/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal" {
-            let t: cosmos_sdk_proto::cosmos::upgrade::v1beta1::SoftwareUpgradeProposal = cosmos_sdk_proto::traits::MessageExt::from_any(p).unwrap();
-            Proposal::SoftwareUpgradeProposal(t)
-        } else if p.type_url == "/ibc.core.client.v1.ClientUpdateProposal" {
-            let t: cosmos_sdk_proto::ibc::core::client::v1::ClientUpdateProposal = cosmos_sdk_proto::traits::MessageExt::from_any(p).unwrap();
-            Proposal::ClientUpdateProposal(t)
-        } else if p.type_url == "/osmosis.poolincentives.v1beta1.UpdatePoolIncentivesProposal" {
-            let t: osmosis_proto::osmosis::poolincentives::v1beta1::UpdatePoolIncentivesProposal = cosmos_sdk_proto::traits::MessageExt::from_any(p).unwrap();
-            Proposal::UpdatePoolIncentivesProposal(t)
-        } else {
-            Proposal::UnknownProposalType
+    pub fn new(blockchain: &SupportedBlockchain, proposal_status: &ProposalStatus, mut proposal: cosmos_sdk_proto::cosmos::gov::v1beta1::Proposal) -> ProposalExt {
+        let content = ProposalExt::content(&proposal);
+        proposal.content = None;
+        ProposalExt {
+            blockchain: blockchain.clone(),
+            status: proposal_status.clone(),
+            proposal,
+            content,
         }
     }
-    // todo! add display function
+    fn content(proposal: &cosmos_sdk_proto::cosmos::gov::v1beta1::Proposal) -> ProposalContent {
+        let p = proposal.content.as_ref().unwrap();
+        if p.type_url == "/cosmos.gov.v1beta1.TextProposal" {
+            let t: cosmos_sdk_proto::cosmos::gov::v1beta1::TextProposal = cosmos_sdk_proto::traits::MessageExt::from_any(p).unwrap();
+            ProposalContent::TextProposal(t)
+        } else if p.type_url == "/cosmos.distribution.v1beta1.CommunityPoolSpendProposal" {
+            let t: cosmos_sdk_proto::cosmos::distribution::v1beta1::CommunityPoolSpendProposal = cosmos_sdk_proto::traits::MessageExt::from_any(p).unwrap();
+            ProposalContent::CommunityPoolSpendProposal(t)
+        } else if p.type_url == "/cosmos.params.v1beta1.ParameterChangeProposal" {
+            let t: cosmos_sdk_proto::cosmos::params::v1beta1::ParameterChangeProposal = cosmos_sdk_proto::traits::MessageExt::from_any(p).unwrap();
+            ProposalContent::ParameterChangeProposal(t)
+        } else if p.type_url == "/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal" {
+            let t: cosmos_sdk_proto::cosmos::upgrade::v1beta1::SoftwareUpgradeProposal = cosmos_sdk_proto::traits::MessageExt::from_any(p).unwrap();
+            ProposalContent::SoftwareUpgradeProposal(t)
+        } else if p.type_url == "/ibc.core.client.v1.ClientUpdateProposal" {
+            let t: cosmos_sdk_proto::ibc::core::client::v1::ClientUpdateProposal = cosmos_sdk_proto::traits::MessageExt::from_any(p).unwrap();
+            ProposalContent::ClientUpdateProposal(t)
+        } else if p.type_url == "/osmosis.poolincentives.v1beta1.UpdatePoolIncentivesProposal" {
+            let t: osmosis_proto::osmosis::poolincentives::v1beta1::UpdatePoolIncentivesProposal = cosmos_sdk_proto::traits::MessageExt::from_any(p).unwrap();
+            ProposalContent::UpdatePoolIncentivesProposal(t)
+        } else if p.type_url == "/cosmwasm.wasm.v1.StoreCodeProposal" {
+            let t: cosmos_sdk_proto::cosmwasm::wasm::v1::StoreCodeProposal = cosmos_sdk_proto::traits::MessageExt::from_any(p).unwrap();
+            ProposalContent::StoreCodeProposal(t)
+        }else{
+            ProposalContent::UnknownProposalType(p.type_url.to_string())
+        }
+    }
+    pub fn time(&self, time: ProposalTime) -> Option<Timestamp> {
+        match time {
+            ProposalTime::SubmitTime => {self.proposal.submit_time.clone()},
+            ProposalTime::DepositEndTime => {self.proposal.deposit_end_time.clone()},
+            ProposalTime::VotingEndTime => {self.proposal.voting_end_time.clone()},
+            ProposalTime::VotingStartTime => {self.proposal.voting_start_time.clone()}
+            ProposalTime::LatestTime => {self.latest_time()}
+        }
+    }
+    pub fn latest_time(&self) -> Option<Timestamp> {
+        match self.status {
+            ProposalStatus::StatusNil => {
+                self.proposal.submit_time.clone()
+            }
+            ProposalStatus::StatusDepositPeriod => {
+                self.proposal.submit_time.clone()
+            }
+            ProposalStatus::StatusVotingPeriod => {
+                self.proposal.voting_start_time.clone()
+            }
+            ProposalStatus::StatusPassed => {
+                self.proposal.voting_end_time.clone()
+            }
+            ProposalStatus::StatusRejected => {
+                self.proposal.voting_end_time.clone()
+            }
+            ProposalStatus::StatusFailed => {
+                self.proposal.submit_time.clone()
+            }
+        }
+    }
+    pub fn custom_display(&self) -> String {
+        let title = match &self.content {
+            ProposalContent::TextProposal(p) => {p.title.to_owned()}
+            ProposalContent::CommunityPoolSpendProposal(p) => {p.title.to_owned()}
+            ProposalContent::ParameterChangeProposal(p) => {p.title.to_owned()}
+            ProposalContent::SoftwareUpgradeProposal(p) => {p.title.to_owned()}
+            ProposalContent::ClientUpdateProposal(p) => {p.title.to_owned()}
+            ProposalContent::UpdatePoolIncentivesProposal(p) => {p.title.to_owned()}
+            ProposalContent::StoreCodeProposal(p) => {p.title.to_owned()}
+            ProposalContent::UnknownProposalType(_) => {"unknown title".to_string()}
+            _ => {panic!()}
+        };
+        let voting_start = match self.proposal.voting_start_time.as_ref() {
+            Some(voting_start_time) => {
+                if voting_start_time.seconds > 0 {
+                    format!("Voting Start: {}",DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(voting_start_time.seconds, voting_start_time.nanos as u32), Utc).to_rfc2822())
+                }else{
+                    "".to_string()
+                }
+            }
+            None => {
+                "".to_string()
+            }
+        };
+        let voting_end = match self.proposal.voting_end_time.as_ref() {
+            Some(voting_end_time) => {
+                if voting_end_time.seconds > 0 {
+                    format!("Voting End: {}",DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(voting_end_time.seconds, voting_end_time.nanos as u32), Utc).to_rfc2822())
+                }else{
+                    "".to_string()
+                }
+            }
+            None => {
+                "".to_string()
+            }
+        };
+
+        let tally_result = match self.proposal.final_tally_result.as_ref() {
+            None => {
+                "".to_string()
+            }
+            Some(tally) => {
+                if !(tally.yes == "0" && tally.abstain == "0" && tally.no == "0" && tally.no_with_veto == "0") {
+                    format!("(abstain: {}, yes: {}, no: {}, no_with_veto: {})", tally.abstain, tally.yes, tally.no, tally.no_with_veto)
+                }else{
+                    "".to_string()
+                }
+            } // todo: calculate percentages %
+
+        };
+        format!("{}\n#{}  -  [{}]\n{}\n{}\n{}\n{}",&self.content.to_string(),&self.proposal.proposal_id,&self.status.to_string(),title,voting_start,voting_end,tally_result)
+        // add a link or a generalized description field
+    }
 }
 
 pub async fn get_proposals(blockchain: SupportedBlockchain, proposal_status: ProposalStatus) -> anyhow::Result<Vec<ProposalExt>> {
 
-    let channel = cosmos::channels::channel(blockchain).await?;
+    let channel = cosmos::channels::channel((&blockchain).clone()).await?;
     let res = cosmos::query::get_proposals(channel, cosmos_sdk_proto::cosmos::gov::v1beta1::QueryProposalsRequest {
         proposal_status: proposal_status as i32,
         voter: "".to_string(),
@@ -86,7 +217,7 @@ pub async fn get_proposals(blockchain: SupportedBlockchain, proposal_status: Pro
 
     let mut list: Vec<ProposalExt> = Vec::new();
     for proposal in res.proposals {
-        list.push(ProposalExt(proposal));
+        list.push(ProposalExt::new(&blockchain, &proposal_status,proposal));
     }
     Ok(list)
 }
@@ -103,7 +234,7 @@ mod test {
     #[tokio::test]
     pub async fn get_proposals() -> anyhow::Result<()> {
         let res = super::get_proposals(SupportedBlockchain::Terra,super::ProposalStatus::StatusPassed).await?;
-        println!("{:?}",res.iter().map(|x| x.content()).collect::<Vec<super::Proposal>>());
+        println!("{:?}",res.iter().map(|x| x.content).collect::<Vec<super::ProposalContent>>());
         Ok(())
     }
 }

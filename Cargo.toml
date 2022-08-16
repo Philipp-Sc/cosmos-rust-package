@@ -12,7 +12,7 @@ cw20 = { package = "cw20", version = "*" }
 cosmrs = {path = "/home/user/Documents/cosmos-rust-development/cosmrs",  features = ["cosmwasm"] }
 cosmos-sdk-proto = { path = "/home/user/Documents/cosmos-rust-development/cosmos-sdk-proto", features = ["grpc-transport", "cosmwasm"] }
 osmosis-proto = { path = "/home/user/Documents/cosmos-rust-development/osmosis-proto", features = ["grpc-transport", "osmosis"], optional = true }
-
+chrono = "^0.4"
 prost = "0.10"
 prost-types = "0.10"
 tonic = { version = "0.7.2", features = ["transport"] }
@@ -33,6 +33,8 @@ base64 = "0.13.0"
 log = "0.4.14"
 thiserror = { version = "1.0.21" }
 eyre = "0.6"
+strum = "0.24"
+strum_macros = "0.24"
 
 [features]
 default = ["cosmos","osmosis"]

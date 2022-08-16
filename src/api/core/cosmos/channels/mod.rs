@@ -4,7 +4,12 @@ use std::time::Duration;
 use cosmos_sdk_proto::cosmwasm::wasm::v1::query_client::QueryClient;
 use std::fmt::{self, Debug, Display};
 
-#[derive(Debug, Clone)]
+use strum::IntoEnumIterator;
+use strum_macros::EnumIter;
+use std::string::ToString;
+use strum_macros;
+
+#[derive(strum_macros::ToString, Debug, Clone, PartialEq ,EnumIter)]
 pub enum SupportedBlockchain {
     Terra,
     Osmosis,
@@ -16,20 +21,16 @@ impl SupportedBlockchain {
             "osmosis" => SupportedBlockchain::Osmosis,
             _ => panic!(),
         }
-
     }
-}
-
-impl fmt::Display for SupportedBlockchain {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let prefix = match self {
+    pub fn get_prefix(&self) -> &str {
+        match self {
             SupportedBlockchain::Terra => "terra",
             SupportedBlockchain::Osmosis => "osmo",
             _ => "unknown",
-        };
-        write!(f, "{}", prefix)
+        }
     }
 }
+
 
 pub async fn channel(blockchain: SupportedBlockchain) -> anyhow::Result<Channel> {
     match blockchain {
