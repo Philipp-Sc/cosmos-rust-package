@@ -1,5 +1,5 @@
 # cosmos-rust-package
-Package used by the cosmos-rust-interface. Makes direct use of cosmos-rust (cosmos‑sdk‑proto, osmosis-proto, cosmrs).
+Package used by the cosmos-rust-interface. Makes direct use of cosmos-rust (cosmos‑sdk‑proto, osmosis-proto, cosmrs). 
 
 ## Developer notes
 
@@ -16,9 +16,8 @@ Package used by the cosmos-rust-interface. Makes direct use of cosmos-rust (cosm
 `osmosis query interface, returns a proto type`
 
 - cosmos-rust-package/src/api/custom/mod.rs 
-`custom api, extend the response object, returns a new custom type`
+`custom query interface, extended functionality with custom return type, easier to work with`
 
 ### Goals
 
-1. Simple API to query and broadcast transactions via gRPC
-2. Custom API for cosmos-rust-interface & cosmos-rust-bot
+1. Simple API to query and broadcast transactions via gRPC 
