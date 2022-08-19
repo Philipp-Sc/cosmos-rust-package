@@ -130,23 +130,14 @@ impl ProposalExt {
     }
     pub fn latest_time(&self) -> Option<Timestamp> {
         match self.status {
-            ProposalStatus::StatusNil => {
-                self.proposal.submit_time.clone()
-            }
-            ProposalStatus::StatusDepositPeriod => {
+            ProposalStatus::StatusNil | ProposalStatus::StatusDepositPeriod => {
                 self.proposal.submit_time.clone()
             }
             ProposalStatus::StatusVotingPeriod => {
                 self.proposal.voting_start_time.clone()
             }
-            ProposalStatus::StatusPassed => {
+            ProposalStatus::StatusPassed | ProposalStatus::StatusFailed | ProposalStatus::StatusRejected => {
                 self.proposal.voting_end_time.clone()
-            }
-            ProposalStatus::StatusRejected => {
-                self.proposal.voting_end_time.clone()
-            }
-            ProposalStatus::StatusFailed => {
-                self.proposal.submit_time.clone()
             }
         }
     }
