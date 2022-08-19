@@ -21,3 +21,10 @@ Package used by the cosmos-rust-interface. Makes direct use of cosmos-rust (cosm
 ### Goals
 
 1. Simple API to query and broadcast transactions via gRPC 
+
+
+
+## Similar Projects
+
+- <a href="https://github.com/PeggyJV/ocular">PeggyJV/ocular</a>
+- <a href="https://github.com/CyberHoward/cosm-rust-script">CyberHoward/cosm-rust-script</a> 
