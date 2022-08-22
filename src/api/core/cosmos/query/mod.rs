@@ -14,7 +14,7 @@ use std::str;
 
 use tonic::transport::Channel;
 
-use crate::api::core::cosmos::channels::{terra, osmosis};
+use crate::api::core::cosmos::channels;
 
 use cosmos_sdk_proto::cosmos::gov::v1beta1::query_client::QueryClient as GovQueryClient;
 use cosmos_sdk_proto::cosmos::gov::v1beta1::{QueryProposalRequest, QueryProposalsRequest, QueryProposalsResponse};

@@ -15,7 +15,7 @@ use serde_json;
 use std::str;
 
 use tonic::transport::Channel;
-use crate::api::core::cosmos::channels::{terra, osmosis};
+use crate::api::core::cosmos::channels;
 
 // Swap a maximum amount of tokens for an exact amount of another token, similar to swapping a token on the trade screen GUI.
 pub async fn get_estimate_swap_exact_amount_out(channel: Channel, sender: &str, pool_id: u64, token_out: &str, routes: Vec<SwapAmountOutRoute>) -> anyhow::Result<QuerySwapExactAmountOutResponse> {

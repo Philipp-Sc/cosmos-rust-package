@@ -41,9 +41,8 @@ use eyre::anyhow;
 pub mod query;
 pub mod channels;
 
-use channels::{terra,osmosis};
-
 use query::*;
+use crate::api::core::cosmos::channels::SupportedBlockchain;
 
 
 /*
@@ -144,7 +143,7 @@ pub fn sign_doc(tx_body: cosmrs::tx::Body, auth_info: &AuthInfo, base_account: &
 }
 
 pub async fn simulate_tx(tx_bytes: Vec<u8>) -> anyhow::Result<()> {
-    let channel = terra().await?;
+    let channel = channels::get_supported_blockchains().get("terra").unwrap().channel().await?;
     let res = ServiceClient::new(channel).simulate(SimulateRequest {
         tx: None, // deprecated
         tx_bytes: tx_bytes, //prost::Message::encode_to_vec(&transaction),
@@ -195,7 +194,7 @@ pub async fn pipes() -> anyhow::Result<()> {
 */
 
 pub async fn msg_send() -> anyhow::Result<()> {
-    let channel = terra().await?;
+    let channel = channels::get_supported_blockchains().get("terra").unwrap().channel().await?;
 
     /*
     let auth_info =
@@ -384,10 +383,12 @@ mod test {
 
     // cargo test -- --nocapture
 
+    use crate::api::core::cosmos::channels::SupportedBlockchain;
+
     #[tokio::test]
     pub async fn key_from_account() -> anyhow::Result<()> {
 
-        let channel = super::terra().await?;
+        let channel = super::channels::channel(SupportedBlockchain::Terra).await?;
         let account = super::query_account(channel,"terra16f874e52x5704ecrxyg5m9ljfv20cn0hajpng7".to_string()).await?;
         /*println!("TEST: {}", "query_account(address)");
         println!("{:?}", &account);*/

@@ -1,54 +1,32 @@
+use std::collections::HashMap;
 use tonic::transport::channel::Channel;
 use std::time::Duration;
 
 use cosmos_sdk_proto::cosmwasm::wasm::v1::query_client::QueryClient;
 use std::fmt::{self, Debug, Display};
 
-use strum::IntoEnumIterator;
-use strum_macros::EnumIter;
-use std::string::ToString;
-use strum_macros;
 
-#[derive(strum_macros::ToString, Debug, Clone, PartialEq ,EnumIter)]
-pub enum SupportedBlockchain {
-    Terra,
-    Osmosis,
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct SupportedBlockchain{
+    pub name: String,
+    pub prefix: String,
+    pub grpc_nodes: Vec<String>,
+    pub governance_proposals_link: String,
 }
+
 impl SupportedBlockchain {
-    pub fn new(name: &str) -> SupportedBlockchain {
-        match name {
-            "terra" => SupportedBlockchain::Terra,
-            "osmosis" => SupportedBlockchain::Osmosis,
-            _ => panic!(),
-        }
-    }
-    pub fn get_prefix(&self) -> &str {
-        match self {
-            SupportedBlockchain::Terra => "terra",
-            SupportedBlockchain::Osmosis => "osmo",
-            _ => "unknown",
+    pub async fn channel(&self) -> anyhow::Result<Channel> {
+        if self.grpc_nodes.len() > 0 {
+            for_blockchain(self.grpc_nodes[0].to_owned()).await
+        }else{
+            Err(anyhow::anyhow!(format!("Error: {:?} is not a supported cosmos blockchain!",self.name)))
         }
     }
 }
 
-
-pub async fn channel(blockchain: SupportedBlockchain) -> anyhow::Result<Channel> {
-    match blockchain {
-        SupportedBlockchain::Terra => terra().await,
-        SupportedBlockchain::Osmosis => osmosis().await,
-        _ => Err(anyhow::anyhow!(format!("Error: {:?} is not a supported cosmos blockchain!",blockchain))),
-    }
-}
-
-pub async fn osmosis() -> anyhow::Result<Channel> {
-    //let channel = Channel::from_static("http://46.38.251.100:9090") // Felix | Interbloc
-    //let channel = Channel::from_static("http://v-terra-hel-1.zyons.com:29090")
-    let channel = Channel::from_static("http://osmosis.strange.love:9090")
-        //let channel = Channel::from_static("http://cosmoshub.validator.network:443")
-        //let channel = Channel::from_static("http://cosmos.chorus.one:26657")
-        //let channel = Channel::from_static("http://rpc.cosmos.network:26657")
-        //let channel = Channel::from_static("http://a.client.sentry.neerajnet.bluzelle.com:9090")
-        //let channel = Channel::from_static("http://grpc-osmosis-ia.notional.ventures:443")
+pub async fn for_blockchain(grpc_url: String) -> anyhow::Result<Channel> {
+    let channel = Channel::from_shared(grpc_url)?
         .timeout(Duration::from_secs(5))
         .rate_limit(5, Duration::from_secs(1))
         .concurrency_limit(256)
@@ -57,13 +35,27 @@ pub async fn osmosis() -> anyhow::Result<Channel> {
     Ok(channel)
 }
 
-pub async fn terra() -> anyhow::Result<Channel> {
-    //let channel = Channel::from_static("http://v-terra-hel-1.zyons.com:29090")
-    let channel = Channel::from_static("http://n-fsn-7.zyons.com:29090")
-        .timeout(Duration::from_secs(5))
-        .rate_limit(5, Duration::from_secs(1))
-        .concurrency_limit(256)
-        .connect()
-        .await?;
-    Ok(channel)
+// todo: load from file, so that users can add their own blockchains.
+// todo: go trough grpc_nodes list if node offline, or transport error, etc.
+pub fn get_supported_blockchains() -> HashMap<String,SupportedBlockchain> {
+    let mut supported_blockchains: HashMap<String,SupportedBlockchain> = HashMap::new();
+    supported_blockchains.insert("terra".to_string(),SupportedBlockchain{
+        name: "Terra".to_string(),
+        prefix: "terra".to_string(),
+        grpc_nodes: vec!["http://n-fsn-7.zyons.com:29090".to_string()],
+        governance_proposals_link: "https://station.terra.money/proposal/".to_string()
+    });
+    supported_blockchains.insert("osmosis".to_string(),SupportedBlockchain{
+        name: "Osmosis".to_string(),
+        prefix: "osmo".to_string(),
+        grpc_nodes: vec!["http://osmosis.strange.love:9090".to_string()],
+        governance_proposals_link: "https://www.mintscan.io/osmosis/proposals/".to_string()
+    });
+    supported_blockchains.insert("juno".to_string(),SupportedBlockchain{
+        name: "Juno".to_string(),
+        prefix: "juno".to_string(),
+        grpc_nodes: vec!["http://juno-grpc.polkachu.com:9090".to_string()],
+        governance_proposals_link: "https://www.mintscan.io/juno/proposals/".to_string()
+    });
+    supported_blockchains
 }

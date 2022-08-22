@@ -2,7 +2,7 @@
 use std::hash::{Hash, Hasher};
 use prost_types::Timestamp;
 use crate::api::core::*;
-use crate::api::core::cosmos::channels::SupportedBlockchain;
+use crate::api::core::cosmos::channels::{get_supported_blockchains, SupportedBlockchain};
 
 use strum_macros::EnumIter;
 use std::string::ToString;
@@ -63,12 +63,13 @@ pub enum ProposalContent {
     ClientUpdateProposal(cosmos_sdk_proto::ibc::core::client::v1::ClientUpdateProposal),
     UpdatePoolIncentivesProposal(osmosis_proto::osmosis::poolincentives::v1beta1::UpdatePoolIncentivesProposal),
     StoreCodeProposal(cosmos_sdk_proto::cosmwasm::wasm::v1::StoreCodeProposal),
+    RemoveSuperfluidAssetsProposal(osmosis_proto::osmosis::superfluid::v1beta1::RemoveSuperfluidAssetsProposal),
     UnknownProposalType(String),
 }
 
 #[derive(Debug, Clone)]
 pub struct ProposalExt {
-    pub blockchain: SupportedBlockchain,
+    pub blockchain_name: String,
     pub status: ProposalStatus,
     pub proposal: cosmos_sdk_proto::cosmos::gov::v1beta1::Proposal,
     pub content: ProposalContent,
@@ -76,7 +77,7 @@ pub struct ProposalExt {
 
 impl Hash for ProposalExt {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.blockchain.to_string().hash(state);
+        self.blockchain_name.hash(state);
         self.proposal.proposal_id.hash(state);
     }
 }
@@ -86,7 +87,7 @@ impl ProposalExt {
         let content = ProposalExt::content(&proposal);
         proposal.content = None;
         ProposalExt {
-            blockchain: blockchain.clone(),
+            blockchain_name: blockchain.name.to_string(),
             status: proposal_status.clone(),
             proposal,
             content,
@@ -115,6 +116,9 @@ impl ProposalExt {
         } else if p.type_url == "/cosmwasm.wasm.v1.StoreCodeProposal" {
             let t: cosmos_sdk_proto::cosmwasm::wasm::v1::StoreCodeProposal = cosmos_sdk_proto::traits::MessageExt::from_any(p).unwrap();
             ProposalContent::StoreCodeProposal(t)
+        }else if p.type_url == "/osmosis.superfluid.v1beta1.RemoveSuperfluidAssetsProposal" {
+            let t: osmosis_proto::osmosis::superfluid::v1beta1::RemoveSuperfluidAssetsProposal = cosmos_sdk_proto::traits::MessageExt::from_any(p).unwrap();
+            ProposalContent::RemoveSuperfluidAssetsProposal(t)
         }else{
             ProposalContent::UnknownProposalType(p.type_url.to_string())
         }
@@ -150,6 +154,7 @@ impl ProposalExt {
             ProposalContent::ClientUpdateProposal(p) => {p.title.to_owned()}
             ProposalContent::UpdatePoolIncentivesProposal(p) => {p.title.to_owned()}
             ProposalContent::StoreCodeProposal(p) => {p.title.to_owned()}
+            ProposalContent::RemoveSuperfluidAssetsProposal(p) => {p.title.to_string()}
             ProposalContent::UnknownProposalType(_) => {"unknown title".to_string()}
             _ => {panic!()}
         };
@@ -191,14 +196,15 @@ impl ProposalExt {
             } // todo: calculate percentages %
 
         };
-        format!("{}\n#{}  -  [{}]\n{}\n{}\n{}\n{}",&self.content.to_string(),&self.proposal.proposal_id,&self.status.to_string(),title,voting_start,voting_end,tally_result)
+        let gov_prop_link = format!("{}{}",get_supported_blockchains().get(&self.blockchain_name.to_lowercase()).unwrap().governance_proposals_link,&self.proposal.proposal_id);
+        format!("{}\n#{}  -  [{}]\n{}\n{}\n{}\n{}\n{}",&self.content.to_string(),&self.proposal.proposal_id,&self.status.to_string(),title,voting_start,voting_end,tally_result,gov_prop_link)
         // add a link or a generalized description field
     }
 }
 
 pub async fn get_proposals(blockchain: SupportedBlockchain, proposal_status: ProposalStatus) -> anyhow::Result<Vec<ProposalExt>> {
 
-    let channel = cosmos::channels::channel((&blockchain).clone()).await?;
+    let channel = blockchain.channel().await?;
     let res = cosmos::query::get_proposals(channel, cosmos_sdk_proto::cosmos::gov::v1beta1::QueryProposalsRequest {
         proposal_status: proposal_status as i32,
         voter: "".to_string(),
@@ -220,11 +226,12 @@ mod test {
     // cargo test -- --nocapture
     // cargo test api::custom::query::gov::get_proposals -- --exact --nocapture
 
-    use crate::api::core::cosmos::channels::SupportedBlockchain;
+    use crate::api::core::cosmos::channels;
 
     #[tokio::test]
     pub async fn get_proposals() -> anyhow::Result<()> {
-        let res = super::get_proposals(SupportedBlockchain::Terra,super::ProposalStatus::StatusPassed).await?;
+
+        let res = super::get_proposals(channels::get_supported_blockchains().get("terra").unwrap() ,super::ProposalStatus::StatusPassed).await?;
         println!("{:?}",res.iter().map(|x| x.content).collect::<Vec<super::ProposalContent>>());
         Ok(())
     }
