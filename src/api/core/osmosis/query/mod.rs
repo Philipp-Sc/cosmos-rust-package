@@ -18,8 +18,8 @@ use tonic::transport::Channel;
 use crate::api::core::cosmos::channels;
 
 // Swap a maximum amount of tokens for an exact amount of another token, similar to swapping a token on the trade screen GUI.
-pub async fn get_estimate_swap_exact_amount_out(channel: Channel, sender: &str, pool_id: u64, token_out: &str, routes: Vec<SwapAmountOutRoute>) -> anyhow::Result<QuerySwapExactAmountOutResponse> {
-    let res = OsmosisQueryClient::new(channel).estimate_swap_exact_amount_out(QuerySwapExactAmountOutRequest{
+pub async fn get_estimate_swap_exact_amount_out(channel: String, sender: &str, pool_id: u64, token_out: &str, routes: Vec<SwapAmountOutRoute>) -> anyhow::Result<QuerySwapExactAmountOutResponse> {
+    let res = OsmosisQueryClient::connect(channel).await?.estimate_swap_exact_amount_out(QuerySwapExactAmountOutRequest{
         sender: sender.to_string(),
         pool_id,
         routes,
@@ -30,8 +30,8 @@ pub async fn get_estimate_swap_exact_amount_out(channel: Channel, sender: &str, 
 }
 
 // Swap an exact amount of tokens for a minimum of another token, similar to swapping a token on the trade screen GUI.
-pub async fn get_estimate_swap_exact_amount_in(channel: Channel, sender: &str, pool_id: u64,token_in: &str, routes: Vec<SwapAmountInRoute>) -> anyhow::Result<QuerySwapExactAmountInResponse> {
-    let res = OsmosisQueryClient::new(channel).estimate_swap_exact_amount_in(QuerySwapExactAmountInRequest{
+pub async fn get_estimate_swap_exact_amount_in(channel: String, sender: &str, pool_id: u64,token_in: &str, routes: Vec<SwapAmountInRoute>) -> anyhow::Result<QuerySwapExactAmountInResponse> {
+    let res = OsmosisQueryClient::connect(channel).await?.estimate_swap_exact_amount_in(QuerySwapExactAmountInRequest{
         sender: sender.to_string(),
         pool_id,
         token_in: token_in.to_string(),
@@ -41,14 +41,14 @@ pub async fn get_estimate_swap_exact_amount_in(channel: Channel, sender: &str, p
     Ok(res)
 }
 
-pub async fn get_pool_count(channel: Channel) -> anyhow::Result<QueryNumPoolsResponse> {
-    let res = OsmosisQueryClient::new(channel).num_pools(QueryNumPoolsRequest {}).await?.into_inner();
+pub async fn get_pool_count(channel: String) -> anyhow::Result<QueryNumPoolsResponse> {
+    let res = OsmosisQueryClient::connect(channel).await?.num_pools(QueryNumPoolsRequest {}).await?.into_inner();
     //println!("{:?}", &res.num_pools);
     Ok(res)
 }
 
-pub async fn get_pools_info(channel: Channel, pagination: Option<PageRequest>) -> anyhow::Result<Vec<Pool>> {
-    let res = OsmosisQueryClient::new(channel).pools(QueryPoolsRequest {
+pub async fn get_pools_info(channel: String, pagination: Option<PageRequest>) -> anyhow::Result<Vec<Pool>> {
+    let res = OsmosisQueryClient::connect(channel).await?.pools(QueryPoolsRequest {
         pagination
     }).await?.into_inner();
 
@@ -57,8 +57,8 @@ pub async fn get_pools_info(channel: Channel, pagination: Option<PageRequest>) -
     Ok(pools)
 }
 
-pub async fn get_pool_info(channel: Channel, pool_id: u64) -> anyhow::Result<Pool> {
-    let res = OsmosisQueryClient::new(channel).pool(QueryPoolRequest {
+pub async fn get_pool_info(channel: String, pool_id: u64) -> anyhow::Result<Pool> {
+    let res = OsmosisQueryClient::connect(channel).await?.pool(QueryPoolRequest {
         pool_id: pool_id,
     }).await?.into_inner();
 

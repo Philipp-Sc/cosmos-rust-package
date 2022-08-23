@@ -19,25 +19,25 @@ use crate::api::core::cosmos::channels;
 use cosmos_sdk_proto::cosmos::gov::v1beta1::query_client::QueryClient as GovQueryClient;
 use cosmos_sdk_proto::cosmos::gov::v1beta1::{QueryProposalRequest, QueryProposalsRequest, QueryProposalsResponse};
 
-pub async fn get_proposals(channel: Channel, query_proposal_request: QueryProposalsRequest) -> anyhow::Result<QueryProposalsResponse> {
-    let res = GovQueryClient::new(channel).proposals(query_proposal_request).await?.into_inner();
+pub async fn get_proposals(channel: String, query_proposal_request: QueryProposalsRequest) -> anyhow::Result<QueryProposalsResponse> {
+    let res = GovQueryClient::connect(channel).await?.proposals(query_proposal_request).await?.into_inner();
     Ok(res)
 }
 
-pub async fn get_contract_info(channel: Channel, address: String) -> anyhow::Result<QueryContractInfoResponse> {
-    let res = QueryClient::new(channel).contract_info(QueryContractInfoRequest { address: address }).await?.into_inner();
+pub async fn get_contract_info(channel: String, address: String) -> anyhow::Result<QueryContractInfoResponse> {
+    let res = QueryClient::connect(channel).await?.contract_info(QueryContractInfoRequest { address: address }).await?.into_inner();
     //println!("{:?}", &res);
     Ok(res)
 }
 
-pub async fn get_smart_contract_state<T: ?Sized + serde::Serialize>(channel: Channel, address: String, query_msg: &T) -> anyhow::Result<QuerySmartContractStateResponse> {
-    let res = QueryClient::new(channel).smart_contract_state(QuerySmartContractStateRequest { address, query_data: serde_json::to_vec(query_msg)? }).await?.into_inner();
+pub async fn get_smart_contract_state<T: ?Sized + serde::Serialize>(channel: String, address: String, query_msg: &T) -> anyhow::Result<QuerySmartContractStateResponse> {
+    let res = QueryClient::connect(channel).await?.smart_contract_state(QuerySmartContractStateRequest { address, query_data: serde_json::to_vec(query_msg)? }).await?.into_inner();
     //println!("{:?}", &res);
     Ok(res)
 }
 
-pub async fn query_account(channel: Channel, address: String) -> anyhow::Result<BaseAccount> {
-    let res: QueryAccountResponse = AuthQueryClient::new(channel).account(QueryAccountRequest { address: address }).await?.into_inner();
+pub async fn query_account(channel: String, address: String) -> anyhow::Result<BaseAccount> {
+    let res: QueryAccountResponse = AuthQueryClient::connect(channel).await?.account(QueryAccountRequest { address: address }).await?.into_inner();
     //println!("{:?}", res.account.as_ref().unwrap().value);
     //println!("{:?}", res.account.as_ref().unwrap().type_url);
     if let Some(account) = &res.account.as_ref() {

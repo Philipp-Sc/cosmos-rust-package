@@ -144,7 +144,7 @@ pub fn sign_doc(tx_body: cosmrs::tx::Body, auth_info: &AuthInfo, base_account: &
 
 pub async fn simulate_tx(tx_bytes: Vec<u8>) -> anyhow::Result<()> {
     let channel = channels::get_supported_blockchains().get("terra").unwrap().channel().await?;
-    let res = ServiceClient::new(channel).simulate(SimulateRequest {
+    let res = ServiceClient::connect("http://osmosis.strange.love:9090").await?.simulate(SimulateRequest {
         tx: None, // deprecated
         tx_bytes: tx_bytes, //prost::Message::encode_to_vec(&transaction),
     }).await?.into_inner();

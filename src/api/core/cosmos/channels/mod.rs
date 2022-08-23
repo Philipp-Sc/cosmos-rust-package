@@ -16,7 +16,7 @@ pub struct SupportedBlockchain{
 }
 
 impl SupportedBlockchain {
-    pub async fn channel(&self) -> anyhow::Result<Channel> {
+    pub async fn channel(&self) -> anyhow::Result<String> {
         if self.grpc_nodes.len() > 0 {
             for_blockchain(self.grpc_nodes[0].to_owned()).await
         }else{
@@ -25,14 +25,17 @@ impl SupportedBlockchain {
     }
 }
 
-pub async fn for_blockchain(grpc_url: String) -> anyhow::Result<Channel> {
-    let channel = Channel::from_shared(grpc_url)?
+pub async fn for_blockchain(grpc_url: String) -> anyhow::Result<String> {
+    /*let channel = Channel::from_shared(grpc_url)?
         .timeout(Duration::from_secs(5))
         .rate_limit(5, Duration::from_secs(1))
         .concurrency_limit(256)
         .connect()
         .await?;
-    Ok(channel)
+    Ok(channel)*/
+    //Channel::builder(grpc_url.parse().unwrap()).connect().await?;
+    //tonic::transport::Endpoint::from_shared(grpc_url);
+    Ok(grpc_url)
 }
 
 // todo: load from file, so that users can add their own blockchains.

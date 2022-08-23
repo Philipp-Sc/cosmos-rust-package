@@ -13,8 +13,8 @@ cosmrs = {path = "/home/user/Documents/cosmos-rust-development/cosmrs",  feature
 cosmos-sdk-proto = { path = "/home/user/Documents/cosmos-rust-development/cosmos-sdk-proto", features = ["grpc-transport", "cosmwasm"] }
 osmosis-proto = { path = "/home/user/Documents/cosmos-rust-development/osmosis-proto", features = ["grpc-transport", "osmosis"], optional = true }
 chrono = "^0.4"
-prost = "0.10"
-prost-types = "0.10"
+prost = "0.11"
+prost-types = "0.11"
 tonic = { version = "0.7.2", features = ["transport"] }
 tokio = { version = "1.4", features = ["full"] }
 anyhow = "1.0"
