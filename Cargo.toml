@@ -35,7 +35,7 @@ thiserror = { version = "1.0.21" }
 eyre = "0.6"
 strum = "0.24"
 strum_macros = "0.24"
-
+regex = "1.6.0"
 [features]
 default = ["cosmos","osmosis"]
 cosmos = []

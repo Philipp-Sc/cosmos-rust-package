@@ -52,13 +52,14 @@ pub fn get_supported_blockchains() -> HashMap<String,SupportedBlockchain> {
         name: "Osmosis".to_string(),
         prefix: "osmo".to_string(),
         grpc_nodes: vec!["http://osmosis.strange.love:9090".to_string()],
-        governance_proposals_link: "https://www.mintscan.io/osmosis/proposals/".to_string()
+        governance_proposals_link: "https://wallet.keplr.app/chains/osmosis/proposals/".to_string()
     });
     supported_blockchains.insert("juno".to_string(),SupportedBlockchain{
         name: "Juno".to_string(),
         prefix: "juno".to_string(),
         grpc_nodes: vec!["http://juno-grpc.polkachu.com:9090".to_string()],
-        governance_proposals_link: "https://www.mintscan.io/juno/proposals/".to_string()
+        governance_proposals_link: "https://wallet.keplr.app/chains/juno/proposals/".to_string()
     });
+    // todo: add atom cosmos-hub
     supported_blockchains
 }

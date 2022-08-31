@@ -13,6 +13,8 @@ use chrono::{NaiveDateTime, NaiveDate};
 use chrono::{DateTime, TimeZone, Utc};
 use cosmos_sdk_proto::cosmos::gov::v1beta1::TallyResult;
 
+use regex::Regex;
+
 #[derive(strum_macros::ToString,Debug,Clone,PartialEq,EnumIter)]
 pub enum ProposalStatus { /*
     StatusNil           ProposalStatus = 0x00
@@ -52,6 +54,29 @@ impl ProposalStatus {
             _ => panic!(),
         }
     }
+    pub fn to_icon(&self) -> String {
+        match self {
+            ProposalStatus::StatusNil => {
+                "⚪".to_string()
+            },
+            ProposalStatus::StatusPassed => {
+                "🟢".to_string()
+            },
+            ProposalStatus::StatusFailed => {
+                "❌".to_string()
+            },
+            ProposalStatus::StatusRejected => {
+                "🔴".to_string()
+            },
+            ProposalStatus::StatusVotingPeriod => {
+                "🗳".to_string()
+            },
+            ProposalStatus::StatusDepositPeriod => {
+                "💰".to_string()
+            },
+        }
+
+    }
 }
 
 #[derive(strum_macros::ToString,Debug, Clone)]
@@ -79,6 +104,7 @@ impl Hash for ProposalExt {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.blockchain_name.hash(state);
         self.proposal.proposal_id.hash(state);
+        self.status.to_string().hash(state);
     }
 }
 
@@ -146,16 +172,16 @@ impl ProposalExt {
         }
     }
     pub fn custom_display(&self) -> String {
-        let title = match &self.content {
-            ProposalContent::TextProposal(p) => {p.title.to_owned()}
-            ProposalContent::CommunityPoolSpendProposal(p) => {p.title.to_owned()}
-            ProposalContent::ParameterChangeProposal(p) => {p.title.to_owned()}
-            ProposalContent::SoftwareUpgradeProposal(p) => {p.title.to_owned()}
-            ProposalContent::ClientUpdateProposal(p) => {p.title.to_owned()}
-            ProposalContent::UpdatePoolIncentivesProposal(p) => {p.title.to_owned()}
-            ProposalContent::StoreCodeProposal(p) => {p.title.to_owned()}
-            ProposalContent::RemoveSuperfluidAssetsProposal(p) => {p.title.to_string()}
-            ProposalContent::UnknownProposalType(_) => {"unknown title".to_string()}
+        let (title,description) = match &self.content {
+            ProposalContent::TextProposal(p) => {(p.title.to_owned(), p.description.to_owned())}
+            ProposalContent::CommunityPoolSpendProposal(p) => {(p.title.to_owned(), p.description.to_owned())}
+            ProposalContent::ParameterChangeProposal(p) => {(p.title.to_owned(), p.description.to_owned())}
+            ProposalContent::SoftwareUpgradeProposal(p) => {(p.title.to_owned(), p.description.to_owned())}
+            ProposalContent::ClientUpdateProposal(p) => {(p.title.to_owned(), p.description.to_owned())}
+            ProposalContent::UpdatePoolIncentivesProposal(p) => {(p.title.to_owned(), p.description.to_owned())}
+            ProposalContent::StoreCodeProposal(p) => {(p.title.to_owned(),p.description.to_owned())}
+            ProposalContent::RemoveSuperfluidAssetsProposal(p) => {(p.title.to_string(), p.description.to_owned())}
+            ProposalContent::UnknownProposalType(_) => {("UnknownTitle".to_string(),"UnknownDescription".to_string())}
             _ => {panic!()}
         };
         let voting_start = match self.proposal.voting_start_time.as_ref() {
@@ -189,16 +215,27 @@ impl ProposalExt {
             }
             Some(tally) => {
                 if !(tally.yes == "0" && tally.abstain == "0" && tally.no == "0" && tally.no_with_veto == "0") {
-                    format!("(abstain: {}, yes: {}, no: {}, no_with_veto: {})", tally.abstain, tally.yes, tally.no, tally.no_with_veto)
+                    let abstain_num = tally.abstain.parse::<f64>().unwrap();
+                    let yes_num = tally.yes.parse::<f64>().unwrap();
+                    let no_num = tally.no.parse::<f64>().unwrap();
+                    let no_with_veto_num = tally.no_with_veto.parse::<f64>().unwrap();
+                    let total = (abstain_num + yes_num + no_num + no_with_veto_num) as f64;
+                    let abstain_num = f64::trunc(abstain_num/total * 100.0  * 100.0) / 100.0;
+                    let yes_num = f64::trunc(yes_num/total * 100.0  * 100.0) / 100.0;
+                    let no_num = f64::trunc(no_num/total * 100.0  * 100.0) / 100.0;
+                    let no_with_veto_num = f64::trunc(no_with_veto_num/total * 100.0  * 100.0) / 100.0;
+                    format!("👍 {}%, 👎 {}%, 🕊️ {}%, ❌ {}%", yes_num, no_num, abstain_num,no_with_veto_num)
                 }else{
                     "".to_string()
                 }
-            } // todo: calculate percentages %
+            }
 
         };
-        let gov_prop_link = format!("{}{}",get_supported_blockchains().get(&self.blockchain_name.to_lowercase()).unwrap().governance_proposals_link,&self.proposal.proposal_id);
-        format!("{}\n#{}  -  [{}]\n{}\n{}\n{}\n{}\n{}",&self.content.to_string(),&self.proposal.proposal_id,&self.status.to_string(),title,voting_start,voting_end,tally_result,gov_prop_link)
-        // add a link or a generalized description field
+        let gov_prop_link = format!("🌐{}{}",get_supported_blockchains().get(&self.blockchain_name.to_lowercase()).unwrap().governance_proposals_link,&self.proposal.proposal_id);
+        let pointpoint = if description.len() >140 {"[...]"}else{""};
+        let description = format!("{}{}",description.chars().into_iter().take(140).collect::<String>(),pointpoint);
+        let info = format!("{}\n#{}  -  {}\n{}\n{}\n{}\n{}\n{}\n{}",&self.content.to_string(),&self.proposal.proposal_id,&self.status.to_icon(),title,voting_start,voting_end,tally_result,description,gov_prop_link);
+        Regex::new("(\n+?)").unwrap().replace_all(&info,"\n").to_string()
     }
 }
 
