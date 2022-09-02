@@ -149,13 +149,13 @@ impl ProposalExt {
             ProposalContent::UnknownProposalType(p.type_url.to_string())
         }
     }
-    pub fn time(&self, time: ProposalTime) -> Option<Timestamp> {
+    pub fn time(&self, time: &ProposalTime) -> Option<Timestamp> {
         match time {
-            ProposalTime::SubmitTime => {self.proposal.submit_time.clone()},
-            ProposalTime::DepositEndTime => {self.proposal.deposit_end_time.clone()},
-            ProposalTime::VotingEndTime => {self.proposal.voting_end_time.clone()},
-            ProposalTime::VotingStartTime => {self.proposal.voting_start_time.clone()}
-            ProposalTime::LatestTime => {self.latest_time()}
+            &ProposalTime::SubmitTime => {self.proposal.submit_time.clone()},
+            &ProposalTime::DepositEndTime => {self.proposal.deposit_end_time.clone()},
+            &ProposalTime::VotingEndTime => {self.proposal.voting_end_time.clone()},
+            &ProposalTime::VotingStartTime => {self.proposal.voting_start_time.clone()}
+            &ProposalTime::LatestTime => {self.latest_time()}
         }
     }
     pub fn latest_time(&self) -> Option<Timestamp> {
