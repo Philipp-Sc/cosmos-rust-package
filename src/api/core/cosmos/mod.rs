@@ -1,7 +1,7 @@
 use tonic::transport::channel::Channel;
 
-use std::time::Duration;
 use cosmos_sdk_proto::cosmos::base::query::v1beta1::PageRequest;
+use std::time::Duration;
 
 use cosmos_sdk_proto::cosmos::tx::v1beta1::service_client::ServiceClient;
 use cosmos_sdk_proto::cosmos::tx::v1beta1::SimulateRequest;
@@ -9,24 +9,26 @@ use cosmos_sdk_proto::cosmos::tx::v1beta1::{Tx, TxBody};
 
 use cosmos_sdk_proto::cosmwasm::wasm::v1::query_client::QueryClient;
 use cosmos_sdk_proto::cosmwasm::wasm::v1::{QueryContractInfoRequest, QueryContractInfoResponse};
-use cosmrs::tendermint::block;
-use cosmrs::Coin;
 use cosmrs::bank::MsgSend;
-use cosmrs::tx::Fee;
-use cosmrs::tx::SignerInfo;
-use cosmrs::tx::SignDoc;
-use cosmrs::tx::{Msg};
+use cosmrs::tendermint::block;
 use cosmrs::tx::AccountNumber;
+use cosmrs::tx::Fee;
+use cosmrs::tx::Msg;
+use cosmrs::tx::SignDoc;
+use cosmrs::tx::SignerInfo;
+use cosmrs::Coin;
 use prost_types::Any;
 
-use cosmos_sdk_proto::cosmwasm::wasm::v1::MsgExecuteContract;
 use cosmos_sdk_proto::cosmos::auth::v1beta1::query_client::QueryClient as AuthQueryClient;
-use cosmos_sdk_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest, QueryAccountResponse};
+use cosmos_sdk_proto::cosmos::auth::v1beta1::{
+    BaseAccount, QueryAccountRequest, QueryAccountResponse,
+};
 use cosmos_sdk_proto::cosmos::crypto::secp256k1::PubKey;
-use cosmos_sdk_proto::cosmos::vesting::v1beta1::{PeriodicVestingAccount};
+use cosmos_sdk_proto::cosmos::vesting::v1beta1::PeriodicVestingAccount;
+use cosmos_sdk_proto::cosmwasm::wasm::v1::MsgExecuteContract;
 
-use cosmrs::tx::Body;
 use cosmrs::tendermint::chain::Id;
+use cosmrs::tx::Body;
 
 //use moneymarket::market::ExecuteMsg;
 
@@ -35,15 +37,14 @@ mod keys;
 use secp256k1::Secp256k1;
 
 use cosmrs::tx::AuthInfo;
-use std::str::FromStr;
 use eyre::anyhow;
+use std::str::FromStr;
 
-pub mod query;
 pub mod channels;
+pub mod query;
 
-use query::*;
 use crate::api::core::cosmos::channels::SupportedBlockchain;
-
+use query::*;
 
 /*
 /// Chain ID to use for tests
@@ -59,12 +60,13 @@ const DENOM: &str = "uluna";
 const MEMO: &str = "test memo";
 */
 
-
 pub fn raw_public_key_from_account(base_account: &BaseAccount) -> anyhow::Result<Vec<u8>> {
     let pub_key = base_account.pub_key.as_ref().unwrap();
     let pk: PubKey = cosmos_sdk_proto::traits::MessageExt::from_any(pub_key).unwrap();
 
-    Ok(keys::public::PublicKey::from_public_key(&pk.key).raw_pub_key.unwrap())
+    Ok(keys::public::PublicKey::from_public_key(&pk.key)
+        .raw_pub_key
+        .unwrap())
     /*
     let mut bech32_pubkey_data_prefix_secp256_k1: Vec<u8> = vec![0xeb, 0x5a, 0xe9, 0x87, 0x21]; // [235, 90, 233, 135, 33]
     bech32_pubkey_data_prefix_secp256_k1.append(&mut pk.key.clone());
@@ -79,8 +81,13 @@ pub fn raw_public_key_from_seed_phrase(seed_phrase: String) -> anyhow::Result<Ve
     Ok(pk?.public_key(&s).raw_pub_key.unwrap())
 }
 
-pub fn public_key_from_account(base_account: &BaseAccount) -> anyhow::Result<keys::public::PublicKey> {
-    let pub_key = base_account.pub_key.as_ref().ok_or(anyhow::anyhow!("no pub_key"))?;
+pub fn public_key_from_account(
+    base_account: &BaseAccount,
+) -> anyhow::Result<keys::public::PublicKey> {
+    let pub_key = base_account
+        .pub_key
+        .as_ref()
+        .ok_or(anyhow::anyhow!("no pub_key"))?;
     let pk: PubKey = cosmos_sdk_proto::traits::MessageExt::from_any(pub_key).unwrap();
     Ok(keys::public::PublicKey::from_public_key(&pk.key))
 }
@@ -92,11 +99,14 @@ pub fn public_key_from_seed_phrase(seed_phrase: String) -> anyhow::Result<keys::
     Ok(pk?.public_key(&s))
 }
 
-pub fn private_key_from_seed_phrase(seed_phrase: String) -> anyhow::Result<cosmrs::crypto::secp256k1::SigningKey> {
+pub fn private_key_from_seed_phrase(
+    seed_phrase: String,
+) -> anyhow::Result<cosmrs::crypto::secp256k1::SigningKey> {
     let coin_type: u32 = 330;
     let s = Secp256k1::new();
     let pk = keys::private::PrivateKey::from_words(&s, seed_phrase.as_str(), 0, 0, coin_type)?;
-    let cosmos_private_key = cosmrs::crypto::secp256k1::SigningKey::from_bytes(&pk.raw_key()).unwrap();
+    let cosmos_private_key =
+        cosmrs::crypto::secp256k1::SigningKey::from_bytes(&pk.raw_key()).unwrap();
     Ok(cosmos_private_key)
 }
 
@@ -111,7 +121,11 @@ pub fn auth_info_from(base_account: &BaseAccount) -> anyhow::Result<AuthInfo> {
     };
     let fee = Fee::from_amount_and_gas(amount, GAS_LIMIT);
 
-    Ok(SignerInfo::single_direct(Some(cosmrs::crypto::PublicKey::try_from(base_account.pub_key.as_ref().unwrap()).unwrap()), base_account.sequence).auth_info(fee))
+    Ok(SignerInfo::single_direct(
+        Some(cosmrs::crypto::PublicKey::try_from(base_account.pub_key.as_ref().unwrap()).unwrap()),
+        base_account.sequence,
+    )
+    .auth_info(fee))
 }
 
 pub fn msg_exec_contract(msg_json: String, contract: String, sender: String) -> Any {
@@ -121,21 +135,38 @@ pub fn msg_exec_contract(msg_json: String, contract: String, sender: String) -> 
         msg: msg_json.as_bytes().to_vec(),
         funds: vec![],
     };
-    cosmos_sdk_proto::traits::MessageExt::to_any(&msg_execute_contract_proto).unwrap()/*.to_any().unwrap()*/
+    cosmos_sdk_proto::traits::MessageExt::to_any(&msg_execute_contract_proto).unwrap()
+    /*.to_any().unwrap()*/
 }
 
-pub async fn msg_execute(msg_json: String, contract: String, base_account: BaseAccount, memo: String, timeout_height: u64) -> anyhow::Result<()> {
-    let body = cosmrs::tx::Body::new(vec![msg_exec_contract(msg_json, contract, base_account.address)], memo, cosmrs::tendermint::block::Height::from(timeout_height as u32));
+pub async fn msg_execute(
+    msg_json: String,
+    contract: String,
+    base_account: BaseAccount,
+    memo: String,
+    timeout_height: u64,
+) -> anyhow::Result<()> {
+    let body = cosmrs::tx::Body::new(
+        vec![msg_exec_contract(msg_json, contract, base_account.address)],
+        memo,
+        cosmrs::tendermint::block::Height::from(timeout_height as u32),
+    );
     Ok(())
 }
 
-pub fn sign_doc(tx_body: cosmrs::tx::Body, auth_info: &AuthInfo, base_account: &BaseAccount, seed_phrase: String) -> anyhow::Result<Vec<u8>> {
+pub fn sign_doc(
+    tx_body: cosmrs::tx::Body,
+    auth_info: &AuthInfo,
+    base_account: &BaseAccount,
+    seed_phrase: String,
+) -> anyhow::Result<Vec<u8>> {
     let sign_doc = SignDoc::new(
         &tx_body,
         &auth_info,
         &Id::try_from("phoenix-1")?,
         base_account.account_number,
-    ).unwrap();
+    )
+    .unwrap();
     let private_key = private_key_from_seed_phrase(seed_phrase).unwrap();
     let tx_raw = sign_doc.sign(&private_key).unwrap();
 
@@ -143,11 +174,19 @@ pub fn sign_doc(tx_body: cosmrs::tx::Body, auth_info: &AuthInfo, base_account: &
 }
 
 pub async fn simulate_tx(tx_bytes: Vec<u8>) -> anyhow::Result<()> {
-    let channel = channels::get_supported_blockchains().get("terra").unwrap().channel().await?;
-    let res = ServiceClient::connect("http://osmosis.strange.love:9090").await?.simulate(SimulateRequest {
-        tx: None, // deprecated
-        tx_bytes: tx_bytes, //prost::Message::encode_to_vec(&transaction),
-    }).await?.into_inner();
+    let channel = channels::get_supported_blockchains()
+        .get("terra")
+        .unwrap()
+        .channel()
+        .await?;
+    let res = ServiceClient::connect("http://osmosis.strange.love:9090")
+        .await?
+        .simulate(SimulateRequest {
+            tx: None,           // deprecated
+            tx_bytes: tx_bytes, //prost::Message::encode_to_vec(&transaction),
+        })
+        .await?
+        .into_inner();
 
     println!("{:?}", res);
     Ok(())
@@ -194,7 +233,11 @@ pub async fn pipes() -> anyhow::Result<()> {
 */
 
 pub async fn msg_send() -> anyhow::Result<()> {
-    let channel = channels::get_supported_blockchains().get("terra").unwrap().channel().await?;
+    let channel = channels::get_supported_blockchains()
+        .get("terra")
+        .unwrap()
+        .channel()
+        .await?;
 
     /*
     let auth_info =
@@ -212,34 +255,34 @@ pub async fn msg_send() -> anyhow::Result<()> {
     */
     /*
 
-    //let msgs: Vec<T: Msg> =;
-    //let msgs: Result<Vec<Any>, _> = msgs.into_iter().map(Msg::into_any).collect();
+        //let msgs: Vec<T: Msg> =;
+        //let msgs: Result<Vec<Any>, _> = msgs.into_iter().map(Msg::into_any).collect();
 
 
 
-    let timeout_height = 9001u16;
-    let msgs: Result<Vec<Any>, _> = msgs.into_iter().map(Msg::into_any).collect();
-    let msgs = msgs?;
-    let gas_denom = self.network.gas_denom.clone();
-    let amount = Coin {
-        amount: 0u8.into(),
-        denom: gas_denom.clone(),
-    };
-    let fee = Fee::from_amount_and_gas(amount, GAS_LIMIT);
+        let timeout_height = 9001u16;
+        let msgs: Result<Vec<Any>, _> = msgs.into_iter().map(Msg::into_any).collect();
+        let msgs = msgs?;
+        let gas_denom = self.network.gas_denom.clone();
+        let amount = Coin {
+            amount: 0u8.into(),
+            denom: gas_denom.clone(),
+        };
+        let fee = Fee::from_amount_and_gas(amount, GAS_LIMIT);
 
-    let tx_body = tx::Body::new(msgs, memo.unwrap_or_default(), timeout_height);
-    let auth_info =
-        SignerInfo::single_direct(Some(pk.public_key(&s)), base_account.sequence).auth_info(fee);
-    let sign_doc = SignDoc::new(
-        &tx_body,
-        &auth_info,
-        &Id::try_from("phoenix-1")?,
-        account_number,
-    )?;
-    let tx_raw = sign_doc.sign(&pk)?;
+        let tx_body = tx::Body::new(msgs, memo.unwrap_or_default(), timeout_height);
+        let auth_info =
+            SignerInfo::single_direct(Some(pk.public_key(&s)), base_account.sequence).auth_info(fee);
+        let sign_doc = SignDoc::new(
+            &tx_body,
+            &auth_info,
+            &Id::try_from("phoenix-1")?,
+            account_number,
+        )?;
+        let tx_raw = sign_doc.sign(&pk)?;
 
-    let sim_gas_used = self.simulate_tx(tx_raw.to_bytes()?).await?;
-*/
+        let sim_gas_used = self.simulate_tx(tx_raw.to_bytes()?).await?;
+    */
 
     Ok(())
 }
@@ -343,8 +386,6 @@ pub async fn msg_send() -> anyhow::Result<()> {
     Ok(())
 }*/
 
-
-
 /* // Example to use tendermint_rpc
 use cosmrs::{
     query,
@@ -377,7 +418,6 @@ pub async fn msg_send() {
 }
 */
 
-
 #[cfg(test)]
 mod test {
 
@@ -387,9 +427,16 @@ mod test {
 
     #[tokio::test]
     pub async fn key_from_account() -> anyhow::Result<()> {
-
-        let channel = super::channels::channel(SupportedBlockchain::Terra).await?;
-        let account = super::query_account(channel,"terra16f874e52x5704ecrxyg5m9ljfv20cn0hajpng7".to_string()).await?;
+        let channel = super::channels::get_supported_blockchains()
+            .get("terra")
+            .unwrap()
+            .channel()
+            .await?;
+        let account = super::query_account(
+            channel,
+            "terra16f874e52x5704ecrxyg5m9ljfv20cn0hajpng7".to_string(),
+        )
+        .await?;
         /*println!("TEST: {}", "query_account(address)");
         println!("{:?}", &account);*/
 
