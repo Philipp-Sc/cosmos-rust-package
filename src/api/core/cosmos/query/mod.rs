@@ -24,11 +24,11 @@ use cosmos_sdk_proto::cosmos::gov::v1beta1::{
 };
 
 pub async fn get_proposals(
-    channel: String,
+    channel: Channel,
     query_proposal_request: QueryProposalsRequest,
 ) -> anyhow::Result<QueryProposalsResponse> {
-    let res = GovQueryClient::connect(channel)
-        .await?
+    let res = GovQueryClient::new(channel)
+        //.await?
         .proposals(query_proposal_request)
         .await?
         .into_inner();
@@ -36,11 +36,11 @@ pub async fn get_proposals(
 }
 
 pub async fn get_contract_info(
-    channel: String,
+    channel: Channel,
     address: String,
 ) -> anyhow::Result<QueryContractInfoResponse> {
-    let res = QueryClient::connect(channel)
-        .await?
+    let res = QueryClient::new(channel)
+        //.await?
         .contract_info(QueryContractInfoRequest { address: address })
         .await?
         .into_inner();
@@ -49,12 +49,12 @@ pub async fn get_contract_info(
 }
 
 pub async fn get_smart_contract_state<T: ?Sized + serde::Serialize>(
-    channel: String,
+    channel: Channel,
     address: String,
     query_msg: &T,
 ) -> anyhow::Result<QuerySmartContractStateResponse> {
-    let res = QueryClient::connect(channel)
-        .await?
+    let res = QueryClient::new(channel)
+        //.await?
         .smart_contract_state(QuerySmartContractStateRequest {
             address,
             query_data: serde_json::to_vec(query_msg)?,
@@ -65,9 +65,9 @@ pub async fn get_smart_contract_state<T: ?Sized + serde::Serialize>(
     Ok(res)
 }
 
-pub async fn query_account(channel: String, address: String) -> anyhow::Result<BaseAccount> {
-    let res: QueryAccountResponse = AuthQueryClient::connect(channel)
-        .await?
+pub async fn query_account(channel: Channel, address: String) -> anyhow::Result<BaseAccount> {
+    let res: QueryAccountResponse = AuthQueryClient::new(channel)
+        //.await?
         .account(QueryAccountRequest { address: address })
         .await?
         .into_inner();

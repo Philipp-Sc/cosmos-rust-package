@@ -346,7 +346,7 @@ mod test {
     #[tokio::test]
     pub async fn get_channel() -> anyhow::Result<()> {
         println!(
-            "{}",
+            "{:?}",
             channels::get_supported_blockchains()
                 .get("osmosis")
                 .unwrap()
@@ -358,12 +358,30 @@ mod test {
 
     #[tokio::test]
     pub async fn get_proposals() -> anyhow::Result<()> {
+        let channel = channels::get_supported_blockchains()
+                .get("terra")
+                .unwrap()
+                .to_owned();
+        println!("{:?}",&channel);
         let res = super::get_proposals(
-            channels::get_supported_blockchains()
+            channel,
+            super::ProposalStatus::StatusPassed
+        )
+        .await?;
+        println!(
+            "{:?}",
+            res.iter()
+                .map(|x| x.content.clone())
+                .collect::<Vec<super::ProposalContent>>()
+        );
+        let channel = channels::get_supported_blockchains()
                 .get("osmosis")
                 .unwrap()
-                .to_owned(),
-            super::ProposalStatus::StatusPassed,
+                .to_owned();
+        println!("{:?}",&channel);
+        let res = super::get_proposals(
+            channel,
+            super::ProposalStatus::StatusPassed
         )
         .await?;
         println!(
