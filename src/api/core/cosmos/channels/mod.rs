@@ -53,10 +53,20 @@ pub async fn for_blockchain(grpc_urls: &Vec<String>) -> anyhow::Result<Channel> 
 // todo: go trough grpc_nodes list if node offline, or transport error, etc.
 pub fn get_supported_blockchains() -> HashMap<String, SupportedBlockchain> {
     let mut supported_blockchains: HashMap<String, SupportedBlockchain> = HashMap::new();
+    /* 
     supported_blockchains.insert(
-        "terra".to_string(),
+        "terra1".to_string(),
         SupportedBlockchain {
-            name: "Terra".to_string(),
+            name: "Terra1".to_string(),
+            prefix: "terra".to_string(),
+            grpc_nodes: vec!["http://grpc-terra-ia.cosmosia.notional.ventures:443".to_string()],
+            governance_proposals_link: "https://station.terra.money/proposal/".to_string(),
+        },
+    );*/
+    supported_blockchains.insert(
+        "terra2".to_string(),
+        SupportedBlockchain {
+            name: "Terra2".to_string(),
             prefix: "terra".to_string(),
             grpc_nodes: vec!["http://n-fsn-7.zyons.com:29090".to_string()],
             governance_proposals_link: "https://station.terra.money/proposal/".to_string(),
