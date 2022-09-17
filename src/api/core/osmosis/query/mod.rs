@@ -111,8 +111,8 @@ mod test {
 
     #[tokio::test]
     pub async fn get_estimate_swap_exact_amount_out() -> anyhow::Result<()> {
-        let channel = super::channels::get_supported_blockchains()
-            .get("osmosis")
+        let channel = super::channels::get_supported_blockchains_from_chain_registry("./packages/chain-registry".to_string(),true,None)
+            .await.get("osmosis")
             .unwrap()
             .channel()
             .await?;
@@ -134,8 +134,8 @@ mod test {
     }
     #[tokio::test]
     pub async fn get_estimate_swap_exact_amount_in() -> anyhow::Result<()> {
-        let channel = super::channels::get_supported_blockchains()
-            .get("osmosis")
+        let channel = super::channels::get_supported_blockchains_from_chain_registry("./packages/chain-registry".to_string(),true,None)
+            .await.get("osmosis")
             .unwrap()
             .channel()
             .await?;
@@ -156,8 +156,8 @@ mod test {
 
     #[tokio::test]
     pub async fn get_pool_count() -> anyhow::Result<()> {
-        let channel = super::channels::get_supported_blockchains()
-            .get("osmosis")
+        let channel = super::channels::get_supported_blockchains_from_chain_registry("./packages/chain-registry".to_string(),true,None)
+            .await.get("osmosis")
             .unwrap()
             .channel()
             .await?;
@@ -167,8 +167,8 @@ mod test {
 
     #[tokio::test]
     pub async fn get_pools_info() -> anyhow::Result<()> {
-        let channel = super::channels::get_supported_blockchains()
-            .get("osmosis")
+        let channel = super::channels::get_supported_blockchains_from_chain_registry("./packages/chain-registry".to_string(),true,None)
+            .await.get("osmosis")
             .unwrap()
             .channel()
             .await?;
@@ -190,8 +190,8 @@ mod test {
 
     #[tokio::test]
     pub async fn get_pool_info() -> anyhow::Result<()> {
-        let channel = super::channels::get_supported_blockchains()
-            .get("osmosis")
+        let channel = super::channels::get_supported_blockchains_from_chain_registry("./packages/chain-registry".to_string(),true,None)
+            .await.get("osmosis")
             .unwrap()
             .channel()
             .await?;

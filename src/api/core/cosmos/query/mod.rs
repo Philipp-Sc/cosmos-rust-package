@@ -102,8 +102,8 @@ mod test {
 
     #[tokio::test]
     pub async fn get_proposals() -> anyhow::Result<()> {
-        let channel = super::channels::get_supported_blockchains()
-            .get("osmosis")
+        let channel = super::channels::get_supported_blockchains_from_chain_registry("./packages/chain-registry".to_string(),true,None)
+            .await.get("osmosis")
             .unwrap()
             .channel()
             .await?;
@@ -122,8 +122,8 @@ mod test {
 
     #[tokio::test]
     pub async fn cw20_balance_via_smart_contract_state() -> anyhow::Result<()> {
-        let channel = super::channels::get_supported_blockchains()
-            .get("terra")
+        let channel = super::channels::get_supported_blockchains_from_chain_registry("./packages/chain-registry".to_string(),true,None)
+            .await.get("terra2")
             .unwrap()
             .channel()
             .await?;
@@ -147,8 +147,8 @@ mod test {
 
     #[tokio::test]
     pub async fn query_account() -> anyhow::Result<()> {
-        let channel = super::channels::get_supported_blockchains()
-            .get("terra")
+        let channel = super::channels::get_supported_blockchains_from_chain_registry("./packages/chain-registry".to_string(),true,None)
+            .await.get("terra2")
             .unwrap()
             .channel()
             .await?;
@@ -164,8 +164,8 @@ mod test {
 
     #[tokio::test]
     pub async fn contract_info() -> anyhow::Result<()> {
-        let channel = super::channels::get_supported_blockchains()
-            .get("terra")
+        let channel = super::channels::get_supported_blockchains_from_chain_registry("./packages/chain-registry".to_string(),true,None)
+            .await.get("terra2")
             .unwrap()
             .channel()
             .await?;

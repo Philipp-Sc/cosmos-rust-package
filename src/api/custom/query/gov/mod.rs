@@ -1,4 +1,4 @@
-use crate::api::core::cosmos::channels::{get_supported_blockchains, SupportedBlockchain};
+use crate::api::core::cosmos::channels::{get_supported_blockchains, get_supported_blockchains_from_chain_registry, SupportedBlockchain};
 use crate::api::core::*;
 use prost_types::Timestamp;
 use std::hash::{Hash, Hasher};
@@ -275,8 +275,7 @@ impl ProposalExt {
         };
         let gov_prop_link = format!(
             "🌐{}{}",
-            get_supported_blockchains()
-                .get(&self.blockchain_name.to_lowercase())
+            get_supported_blockchains().get(&self.blockchain_name.to_lowercase())
                 .unwrap()
                 .governance_proposals_link,
             &self.proposal.proposal_id
@@ -347,8 +346,8 @@ mod test {
     pub async fn get_channel() -> anyhow::Result<()> {
         println!(
             "{:?}",
-            channels::get_supported_blockchains()
-                .get("osmosis")
+            channels::get_supported_blockchains_from_chain_registry("./packages/chain-registry".to_string(),true,None)
+                .await.get("osmosis")
                 .unwrap()
                 .channel()
                 .await?
@@ -358,8 +357,9 @@ mod test {
 
     #[tokio::test]
     pub async fn get_proposals() -> anyhow::Result<()> {
-        let channel = channels::get_supported_blockchains()
-                .get("terra")
+        /*
+        let channel = channels::get_supported_blockchains_from_chain_registry("/home/user/Documents/cosmos-rust-bot/packages/chain-registry".to_string(),true,Some(60))
+                .await.get("terra2")
                 .unwrap()
                 .to_owned();
         println!("{:?}",&channel);
@@ -373,9 +373,9 @@ mod test {
             res.iter()
                 .map(|x| x.content.clone())
                 .collect::<Vec<super::ProposalContent>>()
-        );
-        let channel = channels::get_supported_blockchains()
-                .get("osmosis")
+        );*/
+        let channel = channels::get_supported_blockchains_from_chain_registry("/home/user/Documents/cosmos-rust-bot-workspace/cosmos-rust-bot/packages/chain-registry".to_string(),true,None)
+                .get("cosmoshub")
                 .unwrap()
                 .to_owned();
         println!("{:?}",&channel);

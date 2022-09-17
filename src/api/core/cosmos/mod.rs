@@ -174,8 +174,8 @@ pub fn sign_doc(
 }
 
 pub async fn simulate_tx(tx_bytes: Vec<u8>) -> anyhow::Result<()> {
-    let channel = channels::get_supported_blockchains()
-        .get("terra")
+    let channel = channels::get_supported_blockchains_from_chain_registry("./packages/chain-registry".to_string(),true,None)
+        .await.get("terra2")
         .unwrap()
         .channel()
         .await?;
@@ -233,8 +233,8 @@ pub async fn pipes() -> anyhow::Result<()> {
 */
 
 pub async fn msg_send() -> anyhow::Result<()> {
-    let channel = channels::get_supported_blockchains()
-        .get("terra")
+    let channel = channels::get_supported_blockchains_from_chain_registry("./packages/chain-registry".to_string(),true,None)
+        .await.get("terra2")
         .unwrap()
         .channel()
         .await?;
@@ -427,8 +427,8 @@ mod test {
 
     #[tokio::test]
     pub async fn key_from_account() -> anyhow::Result<()> {
-        let channel = super::channels::get_supported_blockchains()
-            .get("terra")
+        let channel = super::channels::get_supported_blockchains_from_chain_registry("./packages/chain-registry".to_string(),true,None)
+            .await.get("terra2")
             .unwrap()
             .channel()
             .await?;
