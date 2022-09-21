@@ -320,7 +320,7 @@ pub async fn get_proposals(
     let res = cosmos::query::get_proposals(
         channel,
         cosmos_sdk_proto::cosmos::gov::v1beta1::QueryProposalsRequest {
-            proposal_status: proposal_status as i32,
+            proposal_status: proposal_status.clone() as i32,
             voter: "".to_string(),
             depositor: "".to_string(),
             pagination: None,
