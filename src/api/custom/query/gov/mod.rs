@@ -263,33 +263,38 @@ impl ProposalExt {
                     let no_num = f64::trunc(no_num / total * 100.0 * 100.0) / 100.0;
                     let no_with_veto_num =
                         f64::trunc(no_with_veto_num / total * 100.0 * 100.0) / 100.0;
-                    let y = yes_num;
                     format!(
-                        "👍 {}%, 👎 {}%, 🕊️ {}%, ❌ {}%", y,
+                        "👍 {}%, 👎 {}%, 🕊️ {}%, ❌ {}% \n", yes_num,
                         no_num, abstain_num, no_with_veto_num
                     )
+                    // TODO add command/link to check tally_params
                 } else {
                     "".to_string()
                 }
             }
         };
         let gov_prop_link = format!(
-            "🌐{}{}",
+            "{}{}",
             get_supported_blockchains().get(&self.blockchain_name.to_lowercase())
                 .unwrap()
                 .governance_proposals_link,
             &self.proposal.proposal_id
         );
+        let url_regex= Regex::new("\\b(?P<link>((?:https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:, .;]*[-a-zA-Z0-9+&@#/%=~_|]))").unwrap();
 
-        let pointpoint = if description.len() > 140 { "[...]" } else { "" };
+        let link_markdown_regex= Regex::new(r#"\[([^\]]+)\]\(([^\)"]+)\)"#).unwrap();
+
+        let description =  link_markdown_regex.replace_all(&*description, ";;; $1;;; $2;;;").to_string();
+        let mut description = description
+            .split(";;;").collect::<Vec<&str>>();
+        description.dedup();
+
         let description = format!(
-            "{}{}",
-            description
-                .chars()
-                .into_iter()
-                .take(140)
-                .collect::<String>(),
-            pointpoint
+            "{}",
+            url_regex.replace_all(&description.join(""), "$link ⚠️ ").to_string()
+                .split_whitespace()
+                .collect::<Vec<&str>>()
+                .join(" ").replace(r#"\n"#,"\n")
         );
         let info = format!(
             "{}\n#{}  -  {}\n{}\n{}\n{}\n{}\n{}\n{}",
@@ -297,16 +302,13 @@ impl ProposalExt {
             &self.proposal.proposal_id,
             &self.status.to_icon(),
             title,
-            voting_start,
-            voting_end,
+            voting_start.replace("+0000","UTC"),
+            voting_end.replace("+0000","UTC"),
             tally_result,
             description,
             gov_prop_link
         );
-        Regex::new("(\n+?)")
-            .unwrap()
-            .replace_all(&info, "\n")
-            .to_string()
+        info
     }
 }
 
