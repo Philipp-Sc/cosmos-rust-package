@@ -10,9 +10,9 @@ crate-type = ["cdylib", "rlib"]
 chain-registry = "0.1.0"
 cosmwasm-std = "*"
 cw20 = { package = "cw20", version = "*" }
-cosmrs = {git = "https://github.com/Philipp-Sc/cosmos-rust-development.git",  features = ["cosmwasm"] }
-cosmos-sdk-proto = { git = "https://github.com/Philipp-Sc/cosmos-rust-development.git", features = ["grpc-transport", "cosmwasm"] }
-osmosis-proto = { git = "https://github.com/Philipp-Sc/cosmos-rust-development.git", features = ["grpc-transport", "osmosis"], optional = true }
+cosmrs = {path = "../cosmos-rust-development",  features = ["cosmwasm"] }
+cosmos-sdk-proto = { path = "../cosmos-rust-development", features = ["grpc-transport", "cosmwasm"] }
+osmosis-proto = { path = "../cosmos-rust-development", features = ["grpc-transport", "osmosis"], optional = true }
 chrono = "^0.4"
 prost = "0.11"
 prost-types = "0.11"
