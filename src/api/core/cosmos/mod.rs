@@ -1,34 +1,17 @@
-use tonic::transport::channel::Channel;
-
-use cosmos_sdk_proto::cosmos::base::query::v1beta1::PageRequest;
-use std::time::Duration;
-
 use cosmos_sdk_proto::cosmos::tx::v1beta1::service_client::ServiceClient;
 use cosmos_sdk_proto::cosmos::tx::v1beta1::SimulateRequest;
-use cosmos_sdk_proto::cosmos::tx::v1beta1::{Tx, TxBody};
 
-use cosmos_sdk_proto::cosmwasm::wasm::v1::query_client::QueryClient;
-use cosmos_sdk_proto::cosmwasm::wasm::v1::{QueryContractInfoRequest, QueryContractInfoResponse};
-use cosmrs::bank::MsgSend;
-use cosmrs::tendermint::block;
-use cosmrs::tx::AccountNumber;
 use cosmrs::tx::Fee;
-use cosmrs::tx::Msg;
 use cosmrs::tx::SignDoc;
 use cosmrs::tx::SignerInfo;
 use cosmrs::Coin;
 use prost_types::Any;
 
-use cosmos_sdk_proto::cosmos::auth::v1beta1::query_client::QueryClient as AuthQueryClient;
-use cosmos_sdk_proto::cosmos::auth::v1beta1::{
-    BaseAccount, QueryAccountRequest, QueryAccountResponse,
-};
+use cosmos_sdk_proto::cosmos::auth::v1beta1::BaseAccount;
 use cosmos_sdk_proto::cosmos::crypto::secp256k1::PubKey;
-use cosmos_sdk_proto::cosmos::vesting::v1beta1::PeriodicVestingAccount;
 use cosmos_sdk_proto::cosmwasm::wasm::v1::MsgExecuteContract;
 
 use cosmrs::tendermint::chain::Id;
-use cosmrs::tx::Body;
 
 //use moneymarket::market::ExecuteMsg;
 
@@ -37,14 +20,10 @@ mod keys;
 use secp256k1::Secp256k1;
 
 use cosmrs::tx::AuthInfo;
-use eyre::anyhow;
 use std::str::FromStr;
 
 pub mod channels;
 pub mod query;
-
-use crate::api::core::cosmos::channels::SupportedBlockchain;
-use query::*;
 
 /*
 /// Chain ID to use for tests
@@ -111,7 +90,7 @@ pub fn private_key_from_seed_phrase(
 }
 
 pub fn auth_info_from(base_account: &BaseAccount) -> anyhow::Result<AuthInfo> {
-    let GAS_LIMIT: u64 = 1_000_000;
+    let gas_limit: u64 = 1_000_000;
     //const GAS_BUFFER: f64 = 1.2;
 
     let gas_denom = cosmrs::Denom::from_str("uluna").unwrap();
@@ -119,7 +98,7 @@ pub fn auth_info_from(base_account: &BaseAccount) -> anyhow::Result<AuthInfo> {
         amount: 0u8.into(),
         denom: gas_denom.clone(),
     };
-    let fee = Fee::from_amount_and_gas(amount, GAS_LIMIT);
+    let fee = Fee::from_amount_and_gas(amount, gas_limit);
 
     Ok(SignerInfo::single_direct(
         Some(cosmrs::crypto::PublicKey::try_from(base_account.pub_key.as_ref().unwrap()).unwrap()),
@@ -146,7 +125,7 @@ pub async fn msg_execute(
     memo: String,
     timeout_height: u64,
 ) -> anyhow::Result<()> {
-    let body = cosmrs::tx::Body::new(
+    let _body = cosmrs::tx::Body::new(
         vec![msg_exec_contract(msg_json, contract, base_account.address)],
         memo,
         cosmrs::tendermint::block::Height::from(timeout_height as u32),
@@ -174,16 +153,21 @@ pub fn sign_doc(
 }
 
 pub async fn simulate_tx(tx_bytes: Vec<u8>) -> anyhow::Result<()> {
-    let channel = channels::get_supported_blockchains_from_chain_registry("./packages/chain-registry".to_string(),true,None)
-        .await.get("terra2")
-        .unwrap()
-        .channel()
-        .await?;
+    let _channel = channels::get_supported_blockchains_from_chain_registry(
+        "./packages/chain-registry".to_string(),
+        true,
+        None,
+    )
+    .await
+    .get("terra2")
+    .unwrap()
+    .channel()
+    .await?;
     let res = ServiceClient::connect("http://osmosis.strange.love:9090")
         .await?
         .simulate(SimulateRequest {
             tx: None,           // deprecated
-            tx_bytes: tx_bytes, //prost::Message::encode_to_vec(&transaction),
+            tx_bytes, //prost::Message::encode_to_vec(&transaction),
         })
         .await?
         .into_inner();
@@ -233,11 +217,16 @@ pub async fn pipes() -> anyhow::Result<()> {
 */
 
 pub async fn msg_send() -> anyhow::Result<()> {
-    let channel = channels::get_supported_blockchains_from_chain_registry("./packages/chain-registry".to_string(),true,None)
-        .await.get("terra2")
-        .unwrap()
-        .channel()
-        .await?;
+    let _channel = channels::get_supported_blockchains_from_chain_registry(
+        "./packages/chain-registry".to_string(),
+        true,
+        None,
+    )
+    .await
+    .get("terra2")
+    .unwrap()
+    .channel()
+    .await?;
 
     /*
     let auth_info =
@@ -268,7 +257,7 @@ pub async fn msg_send() -> anyhow::Result<()> {
             amount: 0u8.into(),
             denom: gas_denom.clone(),
         };
-        let fee = Fee::from_amount_and_gas(amount, GAS_LIMIT);
+        let fee = Fee::from_amount_and_gas(amount, gas_limit);
 
         let tx_body = tx::Body::new(msgs, memo.unwrap_or_default(), timeout_height);
         let auth_info =
@@ -300,7 +289,7 @@ pub async fn commit_tx<T: Msg>(
         amount: 0u8.into(),
         denom: gas_denom.clone(),
     };
-    let fee = Fee::from_amount_and_gas(amount, GAS_LIMIT);
+    let fee = Fee::from_amount_and_gas(amount, gas_limit);
 
     let BaseAccount {
         account_number,
@@ -427,11 +416,16 @@ mod test {
 
     #[tokio::test]
     pub async fn key_from_account() -> anyhow::Result<()> {
-        let channel = super::channels::get_supported_blockchains_from_chain_registry("./packages/chain-registry".to_string(),true,None)
-            .await.get("terra2")
-            .unwrap()
-            .channel()
-            .await?;
+        let channel = super::channels::get_supported_blockchains_from_chain_registry(
+            "./packages/chain-registry".to_string(),
+            true,
+            None,
+        )
+        .await
+        .get("terra2")
+        .unwrap()
+        .channel()
+        .await?;
         let account = super::query_account(
             channel,
             "terra16f874e52x5704ecrxyg5m9ljfv20cn0hajpng7".to_string(),

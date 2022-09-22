@@ -1,4 +1,4 @@
-use crate::api::core::cosmos::channels::{get_supported_blockchains, get_supported_blockchains_from_chain_registry, SupportedBlockchain};
+use crate::api::core::cosmos::channels::{get_supported_blockchains, SupportedBlockchain};
 use crate::api::core::*;
 use prost_types::Timestamp;
 use std::hash::{Hash, Hasher};
@@ -12,7 +12,7 @@ use chrono::{DateTime, Utc};
 
 use regex::Regex;
 
-#[derive(strum_macros::ToString, Debug, Clone, PartialEq, EnumIter)]
+#[derive(strum_macros::Display, Debug, Clone, PartialEq, EnumIter)]
 pub enum ProposalStatus {
     /*
     StatusNil           ProposalStatus = 0x00
@@ -30,7 +30,7 @@ pub enum ProposalStatus {
     StatusFailed = 0x05,
 }
 
-#[derive(strum_macros::ToString, Debug, Clone, PartialEq, EnumIter)]
+#[derive(strum_macros::Display, Debug, Clone, PartialEq, EnumIter)]
 pub enum ProposalTime {
     SubmitTime,
     DepositEndTime,
@@ -67,7 +67,7 @@ impl ProposalStatus {
     }
 }
 
-#[derive(strum_macros::ToString, Debug, Clone)]
+#[derive(strum_macros::Display, Debug, Clone)]
 pub enum ProposalContent {
     TextProposal(cosmos_sdk_proto::cosmos::gov::v1beta1::TextProposal),
     CommunityPoolSpendProposal(
@@ -200,9 +200,6 @@ impl ProposalExt {
             ProposalContent::UnknownProposalType(_) => {
                 ("UnknownTitle".to_string(), "UnknownDescription".to_string())
             }
-            _ => {
-                panic!()
-            }
         };
         let voting_start = match self.proposal.voting_start_time.as_ref() {
             Some(voting_start_time) => {
@@ -264,8 +261,7 @@ impl ProposalExt {
                     let no_with_veto_num =
                         f64::trunc(no_with_veto_num / total * 100.0 * 100.0) / 100.0;
                     format!(
-                        "👍 {}%, 👎 {}%, 🕊️ {}%, ❌ {}% \n", yes_num,
-                        no_num, abstain_num, no_with_veto_num
+                        r#"👍 {}%, 👎 {}%, 🕊️ {}%, ❌ {}% \n"#, yes_num, no_num, abstain_num, no_with_veto_num
                     )
                     // TODO add command/link to check tally_params
                 } else {
@@ -275,26 +271,31 @@ impl ProposalExt {
         };
         let gov_prop_link = format!(
             "{}{}",
-            get_supported_blockchains().get(&self.blockchain_name.to_lowercase())
+            get_supported_blockchains()
+                .get(&self.blockchain_name.to_lowercase())
                 .unwrap()
                 .governance_proposals_link,
             &self.proposal.proposal_id
         );
         let url_regex= Regex::new("\\b(?P<link>((?:https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:, .;]*[-a-zA-Z0-9+&@#/%=~_|]))").unwrap();
 
-        let link_markdown_regex= Regex::new(r#"\[([^\]]+)\]\(([^\)"]+)\)"#).unwrap();
+        let link_markdown_regex = Regex::new(r#"\[([^\]]+)\]\(([^\)"]+)\)"#).unwrap();
 
-        let description =  link_markdown_regex.replace_all(&*description, ";;; $1;;; $2;;;").to_string();
-        let mut description = description
-            .split(";;;").collect::<Vec<&str>>();
+        let description = link_markdown_regex
+            .replace_all(&*description, ";;; $1;;; $2;;;")
+            .to_string();
+        let mut description = description.split(";;;").collect::<Vec<&str>>();
         description.dedup();
 
         let description = format!(
             "{}",
-            url_regex.replace_all(&description.join(""), "$link ⚠️ ").to_string()
+            url_regex
+                .replace_all(&description.join(""), "$link ⚠️ ")
+                .to_string()
                 .split_whitespace()
                 .collect::<Vec<&str>>()
-                .join(" ").replace(r#"\n"#,"\n")
+                .join(" ")
+                .replace(r#"\n"#, "\n")
         );
         let info = format!(
             "{}\n#{}  -  {}\n{}\n{}\n{}\n{}\n{}\n{}",
@@ -302,8 +303,8 @@ impl ProposalExt {
             &self.proposal.proposal_id,
             &self.status.to_icon(),
             title,
-            voting_start.replace("+0000","UTC"),
-            voting_end.replace("+0000","UTC"),
+            voting_start.replace("+0000", "UTC"),
+            voting_end.replace("+0000", "UTC"),
             tally_result,
             description,
             gov_prop_link
@@ -348,11 +349,16 @@ mod test {
     pub async fn get_channel() -> anyhow::Result<()> {
         println!(
             "{:?}",
-            channels::get_supported_blockchains_from_chain_registry("./packages/chain-registry".to_string(),true,None)
-                .await.get("osmosis")
-                .unwrap()
-                .channel()
-                .await?
+            channels::get_supported_blockchains_from_chain_registry(
+                "./packages/chain-registry".to_string(),
+                true,
+                None
+            )
+            .await
+            .get("osmosis")
+            .unwrap()
+            .channel()
+            .await?
         );
         Ok(())
     }
@@ -380,12 +386,8 @@ mod test {
                 .get("cosmoshub")
                 .unwrap()
                 .to_owned();
-        println!("{:?}",&channel);
-        let res = super::get_proposals(
-            channel,
-            super::ProposalStatus::StatusPassed
-        )
-        .await?;
+        println!("{:?}", &channel);
+        let res = super::get_proposals(channel, super::ProposalStatus::StatusPassed).await?;
         println!(
             "{:?}",
             res.iter()

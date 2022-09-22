@@ -4,15 +4,13 @@ authors = ["Philipp Schlütermann <philipp.schluetermann@udo.edu>"]
 version = "0.1.0"
 edition = "2021"
 
-crate-type = ["cdylib", "rlib"]
-
 [dependencies]
 chain-registry = "0.1.0"
 cosmwasm-std = "*"
 cw20 = { package = "cw20", version = "*" }
-cosmrs = {path = "../cosmos-rust-development",  features = ["cosmwasm"] }
-cosmos-sdk-proto = { path = "../cosmos-rust-development", features = ["grpc-transport", "cosmwasm"] }
-osmosis-proto = { path = "../cosmos-rust-development", features = ["grpc-transport", "osmosis"], optional = true }
+cosmrs = {path = "../cosmos-rust-development/cosmrs",  features = ["cosmwasm"] }
+cosmos-sdk-proto = { path = "../cosmos-rust-development/cosmos-sdk-proto", features = ["grpc-transport", "cosmwasm"] }
+osmosis-proto = { path = "../cosmos-rust-development/osmosis-proto", features = ["grpc-transport", "osmosis"], optional = true }
 chrono = "^0.4"
 prost = "0.11"
 prost-types = "0.11"

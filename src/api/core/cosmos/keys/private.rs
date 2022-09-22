@@ -1,16 +1,15 @@
 use bitcoin::util::bip32::{ExtendedPrivKey, IntoDerivationPath};
 use bitcoin::Network;
-use crypto::sha2::Sha256;
+//use crypto::sha2::Sha256;
 use secp256k1::Secp256k1;
 
-use crypto::digest::Digest;
+//use crypto::digest::Digest;
 use hkd32::mnemonic::{Phrase, Seed};
 
 use rand_core::OsRng;
 
-use super::public::PublicKey;
 use super::error::TerraRustScriptError;
-
+use super::public::PublicKey;
 
 /// The Private key structure that is used to generate signatures and public keys
 /// WARNING: No Security Audit has been performed

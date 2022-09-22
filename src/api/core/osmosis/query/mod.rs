@@ -1,27 +1,27 @@
 use cosmos_sdk_proto::cosmos::base::query::v1beta1::PageRequest;
 
-use cosmos_sdk_proto::cosmwasm::wasm::v1::query_client::QueryClient;
-use cosmos_sdk_proto::cosmwasm::wasm::v1::*;
-use prost_types::Any;
+//use cosmos_sdk_proto::cosmwasm::wasm::v1::query_client::QueryClient;
+//use cosmos_sdk_proto::cosmwasm::wasm::v1::*;
+//use prost_types::Any;
 
 use osmosis_proto::osmosis::gamm::v1beta1::query_client::QueryClient as OsmosisQueryClient;
 use osmosis_proto::osmosis::gamm::v1beta1::{
-    Pool, QueryNumPoolsRequest, QueryNumPoolsResponse, QueryPoolRequest, QueryPoolResponse,
-    QueryPoolsRequest, QueryPoolsResponse, QuerySwapExactAmountInRequest,
+    Pool, QueryNumPoolsRequest, QueryNumPoolsResponse, QueryPoolRequest, /*QueryPoolResponse,*/
+    QueryPoolsRequest, /*QueryPoolsResponse,*/ QuerySwapExactAmountInRequest,
     QuerySwapExactAmountInResponse, QuerySwapExactAmountOutRequest,
     QuerySwapExactAmountOutResponse, SwapAmountInRoute, SwapAmountOutRoute,
 };
 
-use cosmos_sdk_proto::cosmos::auth::v1beta1::query_client::QueryClient as AuthQueryClient;
-use cosmos_sdk_proto::cosmos::auth::v1beta1::{
+//use cosmos_sdk_proto::cosmos::auth::v1beta1::query_client::QueryClient as AuthQueryClient;
+/*use cosmos_sdk_proto::cosmos::auth::v1beta1::{
     BaseAccount, QueryAccountRequest, QueryAccountResponse,
-};
-use cosmos_sdk_proto::cosmos::vesting::v1beta1::PeriodicVestingAccount;
+};*/
+//use cosmos_sdk_proto::cosmos::vesting::v1beta1::PeriodicVestingAccount;
 
-use serde_json;
+//use serde_json;
 use std::str;
 
-use crate::api::core::cosmos::channels;
+//use crate::api::core::cosmos::channels;
 use tonic::transport::Channel;
 
 // Swap a maximum amount of tokens for an exact amount of another token, similar to swapping a token on the trade screen GUI.

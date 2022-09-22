@@ -1,9 +1,9 @@
-use cosmos_sdk_proto::cosmos::base::query::v1beta1::PageRequest;
+//use cosmos_sdk_proto::cosmos::base::query::v1beta1::PageRequest;
 
 use cosmos_sdk_proto::cosmwasm::wasm::v1::query_client::QueryClient;
 use cosmos_sdk_proto::cosmwasm::wasm::v1::*;
-use cosmrs::tx::Msg;
-use prost_types::Any;
+//use cosmrs::tx::Msg;
+//use prost_types::Any;
 
 use cosmos_sdk_proto::cosmos::auth::v1beta1::query_client::QueryClient as AuthQueryClient;
 use cosmos_sdk_proto::cosmos::auth::v1beta1::{
@@ -12,15 +12,15 @@ use cosmos_sdk_proto::cosmos::auth::v1beta1::{
 use cosmos_sdk_proto::cosmos::vesting::v1beta1::PeriodicVestingAccount;
 
 use serde_json;
-use std::str;
+//use std::str;
 
 use tonic::transport::Channel;
 
-use crate::api::core::cosmos::channels;
+//use crate::api::core::cosmos::channels;
 
 use cosmos_sdk_proto::cosmos::gov::v1beta1::query_client::QueryClient as GovQueryClient;
 use cosmos_sdk_proto::cosmos::gov::v1beta1::{
-    QueryProposalRequest, QueryProposalsRequest, QueryProposalsResponse,
+    /*QueryProposalRequest, */QueryProposalsRequest, QueryProposalsResponse,
 };
 
 pub async fn get_proposals(
