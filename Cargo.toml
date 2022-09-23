@@ -5,36 +5,34 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+cosmrs = {workspace = true,  features = ["cosmwasm"] }
+cosmos-sdk-proto = { workspace = true, features = ["grpc-transport", "cosmwasm"] }
+osmosis-proto = { workspace = true, features = ["grpc-transport", "osmosis"], optional = true }
+chrono.workspace = true
+tokio = { workspace = true, features = ["full"] }
+anyhow.workspace = true
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+rust_decimal.workspace = true
+reqwest.workspace = true
+hex.workspace = true
+log.workspace = true
+strum.workspace = true
+strum_macros.workspace = true
+regex.workspace = true
+base64.workspace = true
+secp256k1 = { workspace = true, default-features = false }
 chain-registry = "0.1.0"
-cosmwasm-std = "*"
-cw20 = { package = "cw20", version = "*" }
-cosmrs = {path = "../cosmos-rust-development/cosmrs",  features = ["cosmwasm"] }
-cosmos-sdk-proto = { path = "../cosmos-rust-development/cosmos-sdk-proto", features = ["grpc-transport", "cosmwasm"] }
-osmosis-proto = { path = "../cosmos-rust-development/osmosis-proto", features = ["grpc-transport", "osmosis"], optional = true }
-chrono = "^0.4"
 prost = "0.11"
 prost-types = "0.11"
 tonic = { version = "0.8.1", features = ["transport","tls"] }
-tokio = { version = "1.21.1", features = ["full"] }
-anyhow = "1.0"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-rust_decimal = "1.12.2"
-secp256k1 = { version = "0.20.3", default-features = false }
-reqwest = "0.11.6"
 bitcoin = "0.27.1"
-hkd32 = { version = "0.5.0", features = ["bip39", "mnemonic", "bech32"] }
+hkd32 = { version = "0.7.0", features = ["bip39", "mnemonic", "bech32"] }
 ed25519-dalek = { version = "1", features = ["serde"] }
 rust-crypto = "^0.2"
-rand_core = { version = "0.5", default-features = false }
-hex = "0.4.3"
-base64 = "0.13.0"
-log = "0.4.14"
+rand_core = { version = "0.6.4", default-features = false }
 thiserror = { version = "1.0.21" }
 eyre = "0.6"
-strum = "0.24"
-strum_macros = "0.24"
-regex = "1.6.0"
 
 [features]
 default = ["cosmos","osmosis"]
