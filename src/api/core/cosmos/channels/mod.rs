@@ -10,7 +10,9 @@ use std::process::Command;
 use std::process::Output;
 use tokio::task::JoinSet;
 
-#[derive(Debug, Clone, PartialEq)]
+use serde::{Deserialize,Serialize};
+
+#[derive(Serialize,Deserialize,Debug, Clone, PartialEq)]
 pub struct SupportedBlockchain {
     pub name: String,
     pub prefix: String,
@@ -92,17 +94,16 @@ fn run_cmd(cmd: impl AsRef<OsStr>, args: Option<Vec<&str>>) -> anyhow::Result<Ou
 pub fn get_supported_blockchains() -> HashMap<String, SupportedBlockchain> {
     let mut supported_blockchains: HashMap<String, SupportedBlockchain> = HashMap::new();
 
-    /*
     // outdated cosmos-sdk
     supported_blockchains.insert(
         "terra".to_string(),
         SupportedBlockchain {
             name: "Terra".to_string(),
             prefix: "terra".to_string(),
-            grpc_list: Vec::new(),
+            grpc_url: None,
             governance_proposals_link: "https://station.terra.money/proposal/".to_string(),
         },
-    );*/
+    );
     supported_blockchains.insert(
         "terra2".to_string(),
         SupportedBlockchain {
