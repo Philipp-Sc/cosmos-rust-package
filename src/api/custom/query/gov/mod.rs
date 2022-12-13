@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::collections::hash_map::DefaultHasher;
 use crate::api::core::cosmos::channels::{get_supported_blockchains, SupportedBlockchain};
 use crate::api::core::*;
@@ -237,34 +238,30 @@ impl ProposalExt {
         }
     }
 
+    pub fn timestamp_to_string(item: Option<Timestamp>) -> String {
+        match item.as_ref() {
+            Some(time) => {
+                if time.seconds > 0 {
+                 DateTime::<Utc>::from_utc(
+                    NaiveDateTime::from_timestamp(
+                    time.seconds,
+                    time.nanos as u32
+                    ),
+                    Utc
+                    ).to_rfc2822().replace("+0000", "UTC")
+                    }else{
+                    "".to_string()
+                    }
+                }
+            None => {"".to_string()},
+            }
+    }
 
     pub fn get_voting_start_and_end(&mut self) -> (String,String) {
 
-        let timestamp_to_string = |item: Option<Timestamp>, name: &str| -> String {
-            match item.as_ref() {
-                Some(time) => {
-                    if time.seconds > 0 {
-                            format!(
-                                "{}: {}",
-                                name,
-                                DateTime::<Utc>::from_utc(
-                                    NaiveDateTime::from_timestamp(
-                                        time.seconds,
-                                        time.nanos as u32
-                                    ),
-                                    Utc
-                                ).to_rfc2822())
-                    }else{
-                         "".to_string()
-                    }
-                }
-                None => {"".to_string()},
-            }
-        };
-
         if let Some(proposal) = self.proposal() {
-            (timestamp_to_string(proposal.voting_start_time,"Voting Start"),
-            timestamp_to_string(proposal.voting_end_time,"Voting End"))
+            (format!("{}",Self::timestamp_to_string(proposal.voting_start_time)),
+             format!("{}",Self::timestamp_to_string(proposal.voting_end_time)))
         }else{
             ("".to_string(),"".to_string())
         }
@@ -293,7 +290,7 @@ impl ProposalExt {
                         let no_with_veto_num =
                             f64::trunc(no_with_veto_num / total * 100.0 * 100.0) / 100.0;
                         return format!(
-                            r#"👍 {}%, 👎 {}%, 🕊️ {}%, ❌ {}% \n"#, yes_num, no_num, abstain_num, no_with_veto_num
+                            r#"👍 {}%, 👎 {}%, 🕊️ {}%, ❌ {}%"#, yes_num, no_num, abstain_num, no_with_veto_num
                         );
                     }
                 }
@@ -309,7 +306,120 @@ impl ProposalExt {
     }
 
 
-    pub fn custom_display(&mut self, fraud_classification: Option<f64>) -> String {
+    pub fn governance_proposal_link(&mut self) -> String {
+        let mut gov_prop_link = get_supported_blockchains()
+            .get(&self.blockchain_name.to_lowercase())
+            .unwrap()
+            .governance_proposals_link.as_str()
+            .to_string();
+        let mut proposal_id = self.proposal().map(|x| x.proposal_id.to_string()).unwrap_or("??".to_string());
+        gov_prop_link.push_str(&proposal_id);
+        gov_prop_link
+    }
+
+    pub fn proposal_clickbait(&mut self, fraud_classification: Option<f64>) -> String {
+        let (title, _) = self.get_title_and_description();
+
+        let mut proposal_id = self.proposal().map(|x| x.proposal_id.to_string()).unwrap_or("??".to_string());
+
+        let mut display = format!("{}\n#{}  -  {}\n{}",
+            self.content().map(|x| x.to_string()).unwrap_or("Proposal".to_string()),
+            proposal_id,
+            &self.status.to_icon(),
+            title,
+        );
+
+        if let Some(prediction) = fraud_classification {
+            let label = if prediction >= 0.70 {
+                "🚨 FRAUD DETECTED"
+            }else if prediction > 0.50 {
+                "⚠ SUSPICIOUS"
+            }else {
+                "🛡️ "
+            };
+            display = format!("{} ({})\n\n{}",label,((100.0*prediction).trunc()/100.0),display);
+        }
+        display
+    }
+
+    pub fn proposal_content(&mut self) -> String {
+        let (_, mut description) = self.get_title_and_description();
+        let proposal_id = self.proposal().map(|x| x.proposal_id.to_string()).unwrap_or("".to_string());
+
+        description = LINK_MARKDOWN_REGEX
+            .replace_all(description.as_str(), ";;; $1;;; $2;;;")
+            .to_string();
+        let mut tmp_description = description.split(";;;").collect::<Vec<&str>>();
+        tmp_description.dedup();
+        description = tmp_description.join("");
+
+        for link in LINK_FINDER.links(&description.to_owned()) {
+            let l = link.as_str();
+            description = description.replace(l, &format!("{} ⚠️ ", l));
+        }
+
+        format!(
+            "#{}  -  Content\n{}",
+            proposal_id,
+            description.replace("\\n","\n"),
+        )
+    }
+
+    pub fn proposal_state(&mut self) -> String {
+        let (voting_start_text,voting_end_text) = self.get_voting_start_and_end();
+        let mut tally_result = self.get_tally_result();
+        let mut proposal_id = self.proposal().map(|x| x.proposal_id.to_string()).unwrap_or("".to_string());
+
+        let mut voting_state = "".to_string();
+        if let Some(proposal) = self.proposal() {
+            if &self.status == &ProposalStatus::StatusVotingPeriod {
+                let mut voting_start = false;
+                if let Some(time) = proposal.voting_start_time {
+                    match DateTime::<Utc>::from_utc(
+                        NaiveDateTime::from_timestamp(
+                            time.seconds,
+                            time.nanos as u32
+                        ),
+                        Utc
+                    ).cmp(&Utc::now()) {
+                        Ordering::Less | Ordering::Equal => { voting_start = true; },
+                        Ordering::Greater => { voting_start = false; },
+                    }
+                }
+                let mut voting_end = false;
+                if let Some(time) = proposal.voting_end_time {
+                    match DateTime::<Utc>::from_utc(
+                        NaiveDateTime::from_timestamp(
+                            time.seconds,
+                            time.nanos as u32
+                        ),
+                        Utc
+                    ).cmp(&Utc::now()) {
+                        Ordering::Less | Ordering::Equal => { voting_end = true; },
+                        Ordering::Greater => { voting_end = false; },
+                    }
+                }
+                voting_state = match (voting_start, voting_end) {
+                    (true, true) => format!("Voting finished"),
+                    (true, false) => format!("Voting ends at {}", voting_end_text),
+                    (false, false) => format!("Voting starts at {}", voting_start_text),
+                    (false, true) => format!("Voting ended before it started!"),
+                };
+            }else if &self.status == &ProposalStatus::StatusDepositPeriod {
+                voting_state = format!("You can help the proposal move forward by depositing now. \nThe deposit period is open until {}",Self::timestamp_to_string(proposal.deposit_end_time))
+            }
+        }
+
+        format!(
+            "#{}  -  {}\n\n{}\n\n{}",
+            proposal_id,
+            &self.status.to_string(),
+            voting_state,
+            tally_result,
+        )
+    }
+
+    pub fn proposal_details(&mut self, fraud_classification: Option<f64>) -> String {
         let (title, mut description) = self.get_title_and_description();
         let (voting_start,voting_end) = self.get_voting_start_and_end();
         let mut tally_result = self.get_tally_result();
@@ -352,8 +462,8 @@ impl ProposalExt {
                     proposal_id,
                     &self.status.to_icon(),
                     title,
-                    voting_start.replace("+0000", "UTC"),
-                    voting_end.replace("+0000", "UTC"),
+                    voting_start,
+                    voting_end,
                     tally_result,
                     description,
                     gov_prop_link
@@ -366,8 +476,8 @@ impl ProposalExt {
                     proposal_id,
                     &self.status.to_icon(),
                     title,
-                    voting_start.replace("+0000", "UTC"),
-                    voting_end.replace("+0000", "UTC"),
+                    voting_start,
+                    voting_end,
                     tally_result,
                     description,
                     gov_prop_link
@@ -380,8 +490,8 @@ impl ProposalExt {
             proposal_id,
             &self.status.to_icon(),
             title,
-            voting_start.replace("+0000", "UTC"),
-            voting_end.replace("+0000", "UTC"),
+            voting_start,
+            voting_end,
             tally_result,
             description,
             gov_prop_link
