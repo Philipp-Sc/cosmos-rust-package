@@ -92,6 +92,7 @@ pub enum ProposalContent {
     UpdatePoolIncentivesProposal(Option<osmosis_proto::osmosis::poolincentives::v1beta1::UpdatePoolIncentivesProposal>),
     StoreCodeProposal(Option<cosmos_sdk_proto::cosmwasm::wasm::v1::StoreCodeProposal>),
     RemoveSuperfluidAssetsProposal(Option<osmosis_proto::osmosis::superfluid::v1beta1::RemoveSuperfluidAssetsProposal>),
+    InstantiateContractProposal(Option<cosmos_sdk_proto::cosmwasm::wasm::v1::InstantiateContractProposal>),
     UnknownProposalType(String),
 }
 
@@ -167,6 +168,9 @@ impl ProposalExt {
                         },
                         "/cosmwasm.wasm.v1.StoreCodeProposal" => {
                             ProposalContent::StoreCodeProposal(cosmos_sdk_proto::traits::MessageExt::from_any(&p).ok())
+                        },
+                        "/cosmwasm.wasm.v1.InstantiateContractProposal" => {
+                            ProposalContent::InstantiateContractProposal(cosmos_sdk_proto::traits::MessageExt::from_any(&p).ok())
                         },
                         "/osmosis.superfluid.v1beta1.RemoveSuperfluidAssetsProposal"=> {
                             ProposalContent::RemoveSuperfluidAssetsProposal(cosmos_sdk_proto::traits::MessageExt::from_any(&p).ok())
