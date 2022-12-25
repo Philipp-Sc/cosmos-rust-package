@@ -230,6 +230,9 @@ impl ProposalExt {
             Some(ProposalContent::RemoveSuperfluidAssetsProposal(Some(p))) => {
                 (p.title.to_owned(), p.description.to_owned())
             },
+            Some(ProposalContent::InstantiateContractProposal(Some(p))) => {
+                (p.title.to_owned(), p.description.to_owned())
+            },
             Some(ProposalContent::UnknownProposalType(_)) => {
                 ("UnknownTitle".to_string(), "UnknownDescription".to_string())
             },
