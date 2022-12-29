@@ -93,6 +93,9 @@ pub enum ProposalContent {
     StoreCodeProposal(Option<cosmos_sdk_proto::cosmwasm::wasm::v1::StoreCodeProposal>),
     RemoveSuperfluidAssetsProposal(Option<osmosis_proto::osmosis::superfluid::v1beta1::RemoveSuperfluidAssetsProposal>),
     InstantiateContractProposal(Option<cosmos_sdk_proto::cosmwasm::wasm::v1::InstantiateContractProposal>),
+    SetSuperfluidAssetsProposal(Option<osmosis_proto::osmosis::superfluid::v1beta1::SetSuperfluidAssetsProposal>),
+    UpdateFeeTokenProposal(Option<osmosis_proto::osmosis::txfees::v1beta1::UpdateFeeTokenProposal>),
+    ReplacePoolIncentivesProposal(Option<osmosis_proto::osmosis::poolincentives::v1beta1::ReplacePoolIncentivesProposal>),
     UnknownProposalType(String),
 }
 
@@ -142,6 +145,7 @@ impl ProposalExt {
         }
         self.proposal.clone()
     }
+
     pub fn content(&mut self) -> Option<ProposalContent> {
         if self.content.is_none() {
             if let Some(p) = self.proposal() {
@@ -174,6 +178,15 @@ impl ProposalExt {
                         },
                         "/osmosis.superfluid.v1beta1.RemoveSuperfluidAssetsProposal"=> {
                             ProposalContent::RemoveSuperfluidAssetsProposal(cosmos_sdk_proto::traits::MessageExt::from_any(&p).ok())
+                        },
+                        "/osmosis.superfluid.v1beta1.SetSuperfluidAssetsProposal"=> {
+                            ProposalContent::SetSuperfluidAssetsProposal(cosmos_sdk_proto::traits::MessageExt::from_any(&p).ok())
+                        },
+                        "/osmosis.txfees.v1beta1.UpdateFeeTokenProposal"=> {
+                            ProposalContent::UpdateFeeTokenProposal(cosmos_sdk_proto::traits::MessageExt::from_any(&p).ok())
+                        },
+                        "/osmosis.poolincentives.v1beta1.ReplacePoolIncentivesProposal"=> {
+                            ProposalContent::ReplacePoolIncentivesProposal(cosmos_sdk_proto::traits::MessageExt::from_any(&p).ok())
                         },
                         &_ => {
                             ProposalContent::UnknownProposalType(a)
@@ -231,6 +244,15 @@ impl ProposalExt {
                 (p.title.to_owned(), p.description.to_owned())
             },
             Some(ProposalContent::InstantiateContractProposal(Some(p))) => {
+                (p.title.to_owned(), p.description.to_owned())
+            },
+            Some(ProposalContent::ReplacePoolIncentivesProposal(Some(p))) => {
+                (p.title.to_owned(), p.description.to_owned())
+            },
+            Some(ProposalContent::SetSuperfluidAssetsProposal(Some(p))) => {
+                (p.title.to_owned(), p.description.to_owned())
+            },
+            Some(ProposalContent::UpdateFeeTokenProposal(Some(p))) => {
                 (p.title.to_owned(), p.description.to_owned())
             },
             Some(ProposalContent::UnknownProposalType(_)) => {
