@@ -96,9 +96,16 @@ pub enum ProposalContent {
     SetSuperfluidAssetsProposal(Option<osmosis_proto::osmosis::superfluid::v1beta1::SetSuperfluidAssetsProposal>),
     UpdateFeeTokenProposal(Option<osmosis_proto::osmosis::txfees::v1beta1::UpdateFeeTokenProposal>),
     ReplacePoolIncentivesProposal(Option<osmosis_proto::osmosis::poolincentives::v1beta1::ReplacePoolIncentivesProposal>),
+    MigrateContractProposal(Option<cosmos_sdk_proto::cosmwasm::wasm::v1::MigrateContractProposal>),
+    UpdateInstantiateConfigProposal(Option<cosmos_sdk_proto::cosmwasm::wasm::v1::UpdateInstantiateConfigProposal>),
+    SudoContractProposal(Option<cosmos_sdk_proto::cosmwasm::wasm::v1::SudoContractProposal>),
+    ExecuteContractProposal(Option<cosmos_sdk_proto::cosmwasm::wasm::v1::ExecuteContractProposal>),
+    UpdateAdminProposal(Option<cosmos_sdk_proto::cosmwasm::wasm::v1::UpdateAdminProposal>),
+    ClearAdminProposal(Option<cosmos_sdk_proto::cosmwasm::wasm::v1::ClearAdminProposal>),
+    PinCodesProposal(Option<cosmos_sdk_proto::cosmwasm::wasm::v1::PinCodesProposal>),
+    UnpinCodesProposal(Option<cosmos_sdk_proto::cosmwasm::wasm::v1::UnpinCodesProposal>),
     UnknownProposalType(String),
 }
-
 #[derive(Serialize,Deserialize,Debug, Clone)]
 pub struct ProposalExt {
     pub blockchain_name: String,
@@ -188,6 +195,31 @@ impl ProposalExt {
                         "/osmosis.poolincentives.v1beta1.ReplacePoolIncentivesProposal"=> {
                             ProposalContent::ReplacePoolIncentivesProposal(cosmos_sdk_proto::traits::MessageExt::from_any(&p).ok())
                         },
+                        "/cosmwasm.wasm.v1.MigrateContractProposal" => {
+                            ProposalContent::MigrateContractProposal(cosmos_sdk_proto::traits::MessageExt::from_any(&p).ok())
+                        },
+                        "/cosmwasm.wasm.v1.UpdateInstantiateConfigProposal" => {
+                            ProposalContent::UpdateInstantiateConfigProposal(cosmos_sdk_proto::traits::MessageExt::from_any(&p).ok())
+                        },
+                        "/cosmwasm.wasm.v1.SudoContractProposal" => {
+                            ProposalContent::SudoContractProposal(cosmos_sdk_proto::traits::MessageExt::from_any(&p).ok())
+                        },
+                        "/cosmwasm.wasm.v1.ExecuteContractProposal" => {
+                            ProposalContent::ExecuteContractProposal(cosmos_sdk_proto::traits::MessageExt::from_any(&p).ok())
+                        },
+                        "/cosmwasm.wasm.v1.UpdateAdminProposal" => {
+                            ProposalContent::UpdateAdminProposal(cosmos_sdk_proto::traits::MessageExt::from_any(&p).ok())
+                        },
+                        "/cosmwasm.wasm.v1.ClearAdminProposal" => {
+                            ProposalContent::ClearAdminProposal(cosmos_sdk_proto::traits::MessageExt::from_any(&p).ok())
+                        },
+                        "/cosmwasm.wasm.v1.PinCodesProposal" => {
+                            ProposalContent::PinCodesProposal(cosmos_sdk_proto::traits::MessageExt::from_any(&p).ok())
+                        },
+                        "/cosmwasm.wasm.v1.UnpinCodesProposal" => {
+                            ProposalContent::UnpinCodesProposal(cosmos_sdk_proto::traits::MessageExt::from_any(&p).ok())
+                        },
+
                         &_ => {
                             ProposalContent::UnknownProposalType(a)
                         }
@@ -255,8 +287,29 @@ impl ProposalExt {
             Some(ProposalContent::UpdateFeeTokenProposal(Some(p))) => {
                 (p.title.to_owned(), p.description.to_owned())
             },
-            Some(ProposalContent::UnknownProposalType(_)) => {
-                ("UnknownTitle".to_string(), "UnknownDescription".to_string())
+            Some(ProposalContent::MigrateContractProposal(Some(p))) => {
+                (p.title.to_owned(), p.description.to_owned())
+            },
+            Some(ProposalContent::UpdateInstantiateConfigProposal(Some(p))) => {
+                (p.title.to_owned(), p.description.to_owned())
+            },
+            Some(ProposalContent::SudoContractProposal(Some(p))) => {
+                (p.title.to_owned(), p.description.to_owned())
+            },
+            Some(ProposalContent::ExecuteContractProposal(Some(p))) => {
+                (p.title.to_owned(), p.description.to_owned())
+            },
+            Some(ProposalContent::UpdateAdminProposal(Some(p))) => {
+                (p.title.to_owned(), p.description.to_owned())
+            },
+            Some(ProposalContent::ClearAdminProposal(Some(p))) => {
+                (p.title.to_owned(), p.description.to_owned())
+            },
+            Some(ProposalContent::UnpinCodesProposal(Some(p))) => {
+                (p.title.to_owned(), p.description.to_owned())
+            },
+            Some(ProposalContent::UnknownProposalType(type_url)) => {
+                ("UnknownTitle".to_string(), format!("UnknownDescription\n\nType URL:\n{}",type_url))
             },
             Some(_) => {
                 ("ContentDecodeErrorTitle".to_string(), "ContentDecodeErrorDescription".to_string())

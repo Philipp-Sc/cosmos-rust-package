@@ -8,9 +8,18 @@ use std::fs::File;
 use std::io::BufReader;
 use std::process::Command;
 use std::process::Output;
+use lazy_static::lazy_static;
 use tokio::task::JoinSet;
 
 use serde::{Deserialize,Serialize};
+
+lazy_static! {
+    static ref SUPPORTED_BLOCKCHAINS: HashMap<String, SupportedBlockchain> = {
+        let data = std::fs::read_to_string("./tmp/supported_blockchains.json").expect("Unable to read file");
+        let supported_blockchains: HashMap<String, SupportedBlockchain> = serde_json::from_str(&data).expect("Unable to parse JSON");
+        supported_blockchains
+    };
+}
 
 #[derive(Serialize,Deserialize,Debug, Clone, PartialEq)]
 pub struct SupportedBlockchain {
@@ -92,58 +101,7 @@ fn run_cmd(cmd: impl AsRef<OsStr>, args: Option<Vec<&str>>) -> anyhow::Result<Ou
 }
 
 pub fn get_supported_blockchains() -> HashMap<String, SupportedBlockchain> {
-    let mut supported_blockchains: HashMap<String, SupportedBlockchain> = HashMap::new();
-
-    // outdated cosmos-sdk
-    supported_blockchains.insert(
-        "terra".to_string(),
-        SupportedBlockchain {
-            name: "Terra".to_string(),
-            prefix: "terra".to_string(),
-            grpc_url: None,
-            governance_proposals_link: "https://station.terra.money/proposal/".to_string(),
-        },
-    );
-    supported_blockchains.insert(
-        "terra2".to_string(),
-        SupportedBlockchain {
-            name: "Terra2".to_string(),
-            prefix: "terra".to_string(),
-            grpc_url: Some("http://n-fsn-7.zyons.com:29090".to_string()),
-            governance_proposals_link: "https://station.terra.money/proposal/".to_string(),
-        },
-    );
-    supported_blockchains.insert(
-        "osmosis".to_string(),
-        SupportedBlockchain {
-            name: "Osmosis".to_string(),
-            prefix: "osmo".to_string(),
-            grpc_url: None,
-            governance_proposals_link: "https://wallet.keplr.app/chains/osmosis/proposals/"
-                .to_string(),
-        },
-    );
-    supported_blockchains.insert(
-        "juno".to_string(),
-        SupportedBlockchain {
-            name: "Juno".to_string(),
-            prefix: "juno".to_string(),
-            grpc_url: None,
-            governance_proposals_link: "https://wallet.keplr.app/chains/juno/proposals/"
-                .to_string(),
-        },
-    );
-    supported_blockchains.insert(
-        "cosmoshub".to_string(),
-        SupportedBlockchain {
-            name: "CosmosHub".to_string(),
-            prefix: "atom".to_string(),
-            grpc_url: None,
-            governance_proposals_link: "https://wallet.keplr.app/chains/cosmos-hub/proposals/"
-                .to_string(),
-        },
-    );
-    supported_blockchains
+    (*SUPPORTED_BLOCKCHAINS).clone()
 }
 
 // refresh_rate in seconds
