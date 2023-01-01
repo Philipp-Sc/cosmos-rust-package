@@ -1,0 +1,39 @@
+{
+  "terra": {
+    "name": "Terra",
+    "prefix": "terra",
+    "grpc_url": null,
+    "governance_proposals_link": "https://station.terra.money/proposal/"
+  },
+  "terra2": {
+    "name": "Terra2",
+    "prefix": "terra",
+    "grpc_url": "http://n-fsn-7.zyons.com:29090",
+    "governance_proposals_link": "https://station.terra.money/proposal/"
+  },
+  "osmosis": {
+    "name": "Osmosis",
+    "prefix": "osmo",
+    "grpc_url": null,
+    "governance_proposals_link": "https://wallet.keplr.app/chains/osmosis/proposals/"
+  },
+  "juno": {
+    "name": "Juno",
+    "prefix": "juno",
+    "grpc_url": null,
+    "governance_proposals_link": "https://wallet.keplr.app/chains/juno/proposals/"
+  },
+  "cosmoshub": {
+    "name": "CosmosHub",
+    "prefix": "atom",
+    "grpc_url": null,
+    "governance_proposals_link": "https://wallet.keplr.app/chains/cosmos-hub/proposals/"
+  },
+  "kujira": {
+    "name": "Kujira",
+    "prefix": "kuji",
+    "grpc_url": null,
+    "governance_proposals_link": "https://blue.kujira.app/govern/"
+  }
+
+}
