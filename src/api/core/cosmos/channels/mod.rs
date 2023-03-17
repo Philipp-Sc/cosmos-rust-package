@@ -23,6 +23,7 @@ lazy_static! {
 
 #[derive(Serialize,Deserialize,Debug, Clone, PartialEq)]
 pub struct SupportedBlockchain {
+    pub display: String,
     pub name: String,
     pub prefix: String,
     pub grpc_url: Option<String>,

@@ -350,6 +350,38 @@ impl ProposalExt {
     }
 
 
+    pub fn spam_likelihood(&mut self) -> Option<f64> {
+        if let Some(proposal) = self.proposal() {
+            match proposal.final_tally_result.as_ref() {
+                None => {
+                    return None;
+                },
+                Some(tally) => {
+                    if !(tally.yes == "0"
+                        && tally.abstain == "0"
+                        && tally.no == "0"
+                        && tally.no_with_veto == "0")
+                    {
+                        let abstain_num = tally.abstain.parse::<f64>().unwrap();
+                        let yes_num = tally.yes.parse::<f64>().unwrap();
+                        let no_num = tally.no.parse::<f64>().unwrap();
+                        let no_with_veto_num = tally.no_with_veto.parse::<f64>().unwrap();
+                        let total = (abstain_num + yes_num + no_num + no_with_veto_num) as f64;
+                        let abstain_num = abstain_num / total;
+                        let yes_num = yes_num / total;
+                        let no_num = no_num / total;
+                        let no_with_veto_num = no_with_veto_num / total;
+                        return Some(((2.0*no_with_veto_num) + no_num - yes_num - (2.0*abstain_num)) / 2.0);
+                    }else{
+                        return None;
+                    }
+                }
+            };
+        }
+        return None;
+    }
+
+
     pub fn get_tally_result(&mut self) -> String {
 
         if let Some(proposal) = self.proposal() {
@@ -404,7 +436,8 @@ impl ProposalExt {
 
         let mut proposal_id = self.proposal().map(|x| x.proposal_id.to_string()).unwrap_or("??".to_string());
 
-        let mut display = format!("{}\n#{}  -  {}\n{}",
+        let mut display = format!("{}\n\n{}\n#{}  -  {}\n{}",
+            self.blockchain_name.clone(),
             self.content().map(|x| x.to_string()).unwrap_or("Proposal".to_string()),
             proposal_id,
             &self.status.to_icon(),
@@ -413,13 +446,13 @@ impl ProposalExt {
 
         if let Some(prediction) = fraud_classification {
             let label = if prediction >= 0.70 {
-                "🚨 FRAUD DETECTED"
+                format!("🚨 ({})\nBe cautious. Check URLs, avoid suspicious links, and remember, if it seems too good to be true, it probably is.",((100.0*prediction).trunc()/100.0))
             }else if prediction > 0.50 {
-                "⚠ SUSPICIOUS"
+                format!("⚠ ({})\nStay safe. Be cautious of links and URLs.",((100.0*prediction).trunc()/100.0))
             }else {
-                "🛡️ "
+                format!("🛡️ ({})",((100.0*prediction).trunc()/100.0))
             };
-            display = format!("{} ({})\n\n{}",label,((100.0*prediction).trunc()/100.0),display);
+            display = format!("{}\n\n{}",display,label);
         }
         display
     }
@@ -528,18 +561,19 @@ impl ProposalExt {
         if let Some(prediction) = fraud_classification {
             if prediction >= 0.70 {
                 return format!(
-                    "🚨 FRAUD DETECTED ({})\n\n{}\n#{}  -  {}\n{}\n\n{}",
-                    ((100.0*prediction).trunc()/100.0),
+                    "{}\n{}\n#{}  -  {}\n{}\n\n{}\n\n🚨 ({})\nBe cautious. Check URLs, avoid suspicious links, and remember, if it seems too good to be true, it probably is.",
+                    self.blockchain_name.clone(),
                     self.content().map(|x| x.to_string()).unwrap_or("Proposal".to_string()),
                     proposal_id,
                     &self.status.to_icon(),
                     title,
-                    gov_prop_link
+                    gov_prop_link,
+                    ((100.0*prediction).trunc()/100.0)
                 );
             }else if prediction > 0.50 {
                 return format!(
-                    "⚠ SUSPICIOUS ({})\n\n{}\n#{}  -  {}\n{}\n{}\n{}\n{}\n{}\n{}",
-                    ((100.0*prediction).trunc()/100.0),
+                    "{}\n{}\n#{}  -  {}\n{}\n{}\n{}\n{}\n{}\n{}\n\n⚠ ({})\nStay safe. Be cautious of links and URLs.",
+                    self.blockchain_name.clone(),
                     self.content().map(|x| x.to_string()).unwrap_or("Proposal".to_string()),
                     proposal_id,
                     &self.status.to_icon(),
@@ -548,12 +582,13 @@ impl ProposalExt {
                     voting_end,
                     tally_result,
                     description,
-                    gov_prop_link
+                    gov_prop_link,
+                    ((100.0*prediction).trunc()/100.0)
                 );
             }else {
                 return format!(
-                    "🛡️ ({})\n\n{}\n#{}  -  {}\n{}\n{}\n{}\n{}\n{}\n{}",
-                    ((100.0*prediction).trunc()/100.0),
+                    "{}\n{}\n#{}  -  {}\n{}\n{}\n{}\n{}\n{}\n{}\n\n🛡️ ({})",
+                    self.blockchain_name.clone(),
                     self.content().map(|x| x.to_string()).unwrap_or("Proposal".to_string()),
                     proposal_id,
                     &self.status.to_icon(),
@@ -562,12 +597,14 @@ impl ProposalExt {
                     voting_end,
                     tally_result,
                     description,
-                    gov_prop_link
+                    gov_prop_link,
+                    ((100.0*prediction).trunc()/100.0),
                 );
             }
         }
         format!(
-            "{}\n#{}  -  {}\n{}\n{}\n{}\n{}\n{}\n{}",
+            "{}\n{}\n#{}  -  {}\n{}\n{}\n{}\n{}\n{}\n{}",
+            self.blockchain_name.clone(),
             self.content().map(|x| x.to_string()).unwrap_or("Proposal".to_string()),
             proposal_id,
             &self.status.to_icon(),
