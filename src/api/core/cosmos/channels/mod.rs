@@ -26,18 +26,33 @@ pub struct SupportedBlockchain {
     pub display: String,
     pub name: String,
     pub prefix: String,
-    pub grpc_url: Option<String>,
+    pub grpc_service:  GRPC_Service,
     pub governance_proposals_link: String,
+}
+
+#[derive(Serialize,Deserialize,Debug, Clone, PartialEq)]
+pub struct GRPC_Service {
+    pub grpc_url: Option<String>, // selected grpc_url
+    pub error: Option<String>,    // error msg if no url could be selected
 }
 
 impl SupportedBlockchain {
     pub async fn channel(&self) -> anyhow::Result<Channel> {
-        match &self.grpc_url {
-            None => Err(anyhow::anyhow!(format!(
-                "Error: {:?} is not a supported cosmos blockchain!",
-                self.name
+        match &self.grpc_service.error {
+            Some(err) => Err(anyhow::anyhow!(format!(
+                "Error: {:?} is not a supported cosmos blockchain:\n Error: {:?}",
+                self.name,
+                err
             ))),
-            Some(grpc_url) => get_channel(grpc_url.to_owned()).await,
+            None => {
+                match &self.grpc_service.grpc_url {
+                    Some(grpc_url) => get_channel(grpc_url.to_owned()).await,
+                    None => Err(anyhow::anyhow!(format!(
+                                "Error: {:?} is not a supported cosmos blockchain:\nError: Missing GRPC URL!",
+                                self.name,
+                            )))
+                }
+            }
         }
     }
 }
@@ -158,13 +173,24 @@ pub async fn get_supported_blockchains_from_chain_registry(
             .iter()
             .map(|x| format!("http://{}", x.address))
             .collect();
-        if let Some(ref hard_coded_grpc_url) = v.grpc_url {
+        if let Some(ref hard_coded_grpc_url) = v.grpc_service.grpc_url {
             try_these_grpc_urls.push(hard_coded_grpc_url.to_owned());
         }
-        v.grpc_url = match select_channel_from_grpc_endpoints(&try_these_grpc_urls).await {
-            Ok(passed_url) => Some(passed_url),
-            Err(_) => None,
-        };
+        match select_channel_from_grpc_endpoints(&try_these_grpc_urls).await {
+            Ok(grpc_url) => {
+                v.grpc_service.grpc_url = Some(grpc_url);
+                v.grpc_service.error = None;
+            },
+            Err(err) => {
+                v.grpc_service.grpc_url = None;
+                v.grpc_service.error = Some(format!(
+                    "Error: {:?} is not a supported cosmos blockchain:\n Error: {:?}",
+                    v.name,
+                    err
+                ));
+            },
+        }
+
     }
     supported_blockchains
 }
