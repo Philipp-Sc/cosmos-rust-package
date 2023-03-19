@@ -40,15 +40,15 @@ impl SupportedBlockchain {
     pub async fn channel(&self) -> anyhow::Result<Channel> {
         match &self.grpc_service.error {
             Some(err) => Err(anyhow::anyhow!(format!(
-                "Error: {:?} is not a supported cosmos blockchain:\n Error: {:?}",
+                "Error: {} is not a supported cosmos blockchain: {}",
                 self.name,
-                err
+                err.to_string()
             ))),
             None => {
                 match &self.grpc_service.grpc_url {
                     Some(grpc_url) => get_channel(grpc_url.to_owned()).await,
                     None => Err(anyhow::anyhow!(format!(
-                                "Error: {:?} is not a supported cosmos blockchain:\nError: Missing GRPC URL!",
+                                "Error: {} is not a supported cosmos blockchain: Error: Missing GRPC URL!",
                                 self.name,
                             )))
                 }
@@ -92,17 +92,28 @@ pub async fn select_channel_from_grpc_endpoints(grpc_urls: &Vec<String>) -> anyh
     }
     let mut channel: Result<String, anyhow::Error> =
         Err(anyhow::anyhow!("Error: No gRPC url passed the check!"));
+    let mut errors: Vec<anyhow::Error> = Vec::new();
     while !join_set.is_empty() && channel.is_err() {
         match join_set.join_next().await {
             Some(Ok(check)) => {
-                if let Ok(passed) = check {
-                    channel = Ok(passed);
+                match check {
+                    Ok(passed) => {
+                        channel = Ok(passed);
+                    },
+                    Err(failed) => {
+                        errors.push(failed);
+                    }
                 }
             }
             _ => {}
         }
     }
     join_set.shutdown().await;
+
+    if channel.is_err() {
+        let error_msg: String = errors.into_iter().map(|err| err.to_string()).collect::<Vec<String>>().join(", ");
+        channel = Err(anyhow::anyhow!(format!("Error: No gRPC url passed the check! {}",error_msg)));
+    }
     channel
 }
 
@@ -184,9 +195,8 @@ pub async fn get_supported_blockchains_from_chain_registry(
             Err(err) => {
                 v.grpc_service.grpc_url = None;
                 v.grpc_service.error = Some(format!(
-                    "Error: {:?} is not a supported cosmos blockchain:\n Error: {:?}",
-                    v.name,
-                    err
+                    "{}",
+                    err.to_string()
                 ));
             },
         }
