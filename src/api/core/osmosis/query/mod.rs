@@ -1,3 +1,4 @@
+/*
 use cosmos_sdk_proto::cosmos::base::query::v1beta1::PageRequest;
 
 //use cosmos_sdk_proto::cosmwasm::wasm::v1::query_client::QueryClient;
@@ -199,3 +200,4 @@ mod test {
         Ok(())
     }
 }
+*/

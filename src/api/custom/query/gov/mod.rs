@@ -20,6 +20,8 @@ use lazy_static::lazy_static;
 use linkify::LinkFinder;
 use cosmos_sdk_proto::cosmos::base::query::v1beta1::PageRequest;
 
+use prost::Message;
+
 lazy_static!{
    pub static ref LINK_FINDER: LinkFinder = get_link_finder();
    pub static ref LINK_MARKDOWN_REGEX: regex::Regex = Regex::new(r#"\[([^\]]+)\]\(([^\)"]+)\)"#).unwrap();
@@ -89,13 +91,13 @@ pub enum ProposalContent {
     ParameterChangeProposal(Option<cosmos_sdk_proto::cosmos::params::v1beta1::ParameterChangeProposal>),
     SoftwareUpgradeProposal(Option<cosmos_sdk_proto::cosmos::upgrade::v1beta1::SoftwareUpgradeProposal>),
     ClientUpdateProposal(Option<cosmos_sdk_proto::ibc::core::client::v1::ClientUpdateProposal>),
-    UpdatePoolIncentivesProposal(Option<osmosis_proto::osmosis::poolincentives::v1beta1::UpdatePoolIncentivesProposal>),
+    UpdatePoolIncentivesProposal(Option<osmosis_std::types::osmosis::poolincentives::v1beta1::UpdatePoolIncentivesProposal>),
     StoreCodeProposal(Option<cosmos_sdk_proto::cosmwasm::wasm::v1::StoreCodeProposal>),
-    RemoveSuperfluidAssetsProposal(Option<osmosis_proto::osmosis::superfluid::v1beta1::RemoveSuperfluidAssetsProposal>),
+    RemoveSuperfluidAssetsProposal(Option<osmosis_std::types::osmosis::superfluid::v1beta1::RemoveSuperfluidAssetsProposal>),
     InstantiateContractProposal(Option<cosmos_sdk_proto::cosmwasm::wasm::v1::InstantiateContractProposal>),
-    SetSuperfluidAssetsProposal(Option<osmosis_proto::osmosis::superfluid::v1beta1::SetSuperfluidAssetsProposal>),
-    UpdateFeeTokenProposal(Option<osmosis_proto::osmosis::txfees::v1beta1::UpdateFeeTokenProposal>),
-    ReplacePoolIncentivesProposal(Option<osmosis_proto::osmosis::poolincentives::v1beta1::ReplacePoolIncentivesProposal>),
+    SetSuperfluidAssetsProposal(Option<osmosis_std::types::osmosis::superfluid::v1beta1::SetSuperfluidAssetsProposal>),
+    UpdateFeeTokenProposal(Option<osmosis_std::types::osmosis::txfees::v1beta1::UpdateFeeTokenProposal>),
+    ReplacePoolIncentivesProposal(Option<osmosis_std::types::osmosis::poolincentives::v1beta1::ReplacePoolIncentivesProposal>),
     MigrateContractProposal(Option<cosmos_sdk_proto::cosmwasm::wasm::v1::MigrateContractProposal>),
     UpdateInstantiateConfigProposal(Option<cosmos_sdk_proto::cosmwasm::wasm::v1::UpdateInstantiateConfigProposal>),
     SudoContractProposal(Option<cosmos_sdk_proto::cosmwasm::wasm::v1::SudoContractProposal>),
@@ -175,7 +177,9 @@ impl ProposalExt {
                             ProposalContent::ClientUpdateProposal(cosmos_sdk_proto::traits::MessageExt::from_any(&p).ok())
                         },
                         "/osmosis.poolincentives.v1beta1.UpdatePoolIncentivesProposal"  => {
-                            ProposalContent::UpdatePoolIncentivesProposal(cosmos_sdk_proto::traits::MessageExt::from_any(&p).ok())
+                            let encoded_any = &p.encode_to_vec();
+                            let decoded = osmosis_std::types::osmosis::poolincentives::v1beta1::UpdatePoolIncentivesProposal::decode(&encoded_any[..]).ok();
+                            ProposalContent::UpdatePoolIncentivesProposal(decoded)
                         },
                         "/cosmwasm.wasm.v1.StoreCodeProposal" => {
                             ProposalContent::StoreCodeProposal(cosmos_sdk_proto::traits::MessageExt::from_any(&p).ok())
@@ -184,16 +188,24 @@ impl ProposalExt {
                             ProposalContent::InstantiateContractProposal(cosmos_sdk_proto::traits::MessageExt::from_any(&p).ok())
                         },
                         "/osmosis.superfluid.v1beta1.RemoveSuperfluidAssetsProposal"=> {
-                            ProposalContent::RemoveSuperfluidAssetsProposal(cosmos_sdk_proto::traits::MessageExt::from_any(&p).ok())
+                            let encoded_any = &p.encode_to_vec();
+                            let decoded = osmosis_std::types::osmosis::superfluid::v1beta1::RemoveSuperfluidAssetsProposal::decode(&encoded_any[..]).ok();
+                            ProposalContent::RemoveSuperfluidAssetsProposal(decoded)
                         },
                         "/osmosis.superfluid.v1beta1.SetSuperfluidAssetsProposal"=> {
-                            ProposalContent::SetSuperfluidAssetsProposal(cosmos_sdk_proto::traits::MessageExt::from_any(&p).ok())
+                            let encoded_any = &p.encode_to_vec();
+                            let decoded = osmosis_std::types::osmosis::superfluid::v1beta1::SetSuperfluidAssetsProposal::decode(&encoded_any[..]).ok();
+                            ProposalContent::SetSuperfluidAssetsProposal(decoded)
                         },
                         "/osmosis.txfees.v1beta1.UpdateFeeTokenProposal"=> {
-                            ProposalContent::UpdateFeeTokenProposal(cosmos_sdk_proto::traits::MessageExt::from_any(&p).ok())
+                            let encoded_any = &p.encode_to_vec();
+                            let decoded = osmosis_std::types::osmosis::txfees::v1beta1::UpdateFeeTokenProposal::decode(&encoded_any[..]).ok();
+                            ProposalContent::UpdateFeeTokenProposal(decoded)
                         },
                         "/osmosis.poolincentives.v1beta1.ReplacePoolIncentivesProposal"=> {
-                            ProposalContent::ReplacePoolIncentivesProposal(cosmos_sdk_proto::traits::MessageExt::from_any(&p).ok())
+                            let encoded_any = &p.encode_to_vec();
+                            let decoded = osmosis_std::types::osmosis::poolincentives::v1beta1::ReplacePoolIncentivesProposal::decode(&encoded_any[..]).ok();
+                            ProposalContent::ReplacePoolIncentivesProposal(decoded)
                         },
                         "/cosmwasm.wasm.v1.MigrateContractProposal" => {
                             ProposalContent::MigrateContractProposal(cosmos_sdk_proto::traits::MessageExt::from_any(&p).ok())
