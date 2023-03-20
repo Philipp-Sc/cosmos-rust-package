@@ -77,11 +77,11 @@ async fn check_grpc_url(grpc_url: String) -> anyhow::Result<String> {
                 },
                 Err(e) => {
                     //println!("{:?}",e);
-                    Err(anyhow::anyhow!(e))
+                    Err(anyhow::anyhow!(format!("GetNodeInfoRequest failed: {}",e.to_string())))
                 }
             }
         }
-        Err(e) => Err(anyhow::anyhow!(e)),
+        Err(e) => Err(anyhow::anyhow!(format!("tonic::transport::Endpoint::connect() failed: {}",e.to_string()))),
     }
 }
 
