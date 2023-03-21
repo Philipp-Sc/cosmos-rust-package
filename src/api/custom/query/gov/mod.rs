@@ -3,6 +3,7 @@ use crate::api::core::*;
 use prost_types::Timestamp;
 use std::cmp::Ordering;
 use std::collections::hash_map::DefaultHasher;
+use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 
 use std::string::ToString;
@@ -438,8 +439,13 @@ impl ProposalExt {
             .to_string();
         gov_prop_link.push_str(&proposal_id);
 
+        let mut processed_links = HashSet::new();
         for link in LINK_FINDER.links(&description.to_owned()) {
             let l = link.as_str();
+            if processed_links.contains(l) {
+                continue; // Skip links that have already been processed
+            }
+            processed_links.insert(l.to_owned());
             description = description.replace(l, &format!("{} ⚠️ ", l));
         }
 
@@ -479,6 +485,11 @@ impl ProposalExt {
                   border-radius: 0 0 5px 5px;
                 }
                 p {
+                  font-size: 18px;
+                  line-height: 1.5;
+                  margin-top: 20px;
+                }
+                span {
                   font-size: 18px;
                   line-height: 1.5;
                   margin-top: 20px;
@@ -594,7 +605,7 @@ impl ProposalExt {
     <h2>#{} - {}</h2>
     <h3>{}</h3>
     <div class=\"description\">
-      <p>{}</p>
+      <span style=\"white-space: pre-wrap\">{}</span>
       <div class=\"show-more\">
         <button id=\"show-more-btn\">Show More</button>
       </div>
