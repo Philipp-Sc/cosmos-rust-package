@@ -424,13 +424,6 @@ impl ProposalExt {
             .unwrap_or("".to_string());
         let (title, mut description) = self.get_title_and_description();
 
-        description = LINK_MARKDOWN_REGEX
-            .replace_all(description.as_str(), ";;; $1;;; $2;;;")
-            .to_string();
-        let mut tmp_description = description.split(";;;").collect::<Vec<&str>>();
-        tmp_description.dedup();
-        description = tmp_description.join("");
-
         let mut gov_prop_link = get_supported_blockchains()
             .get(&self.blockchain_name.to_lowercase())
             .unwrap()
@@ -439,22 +432,14 @@ impl ProposalExt {
             .to_string();
         gov_prop_link.push_str(&proposal_id);
 
-        let mut processed_links = HashSet::new();
-        for link in LINK_FINDER.links(&description.to_owned()) {
-            let l = link.as_str();
-            if processed_links.contains(l) {
-                continue; // Skip links that have already been processed
-            }
-            processed_links.insert(l.to_owned());
-            description = description.replace(l, &format!("{} ⚠️ ", l));
-        }
-
         let proposal_type = self
             .content()
             .map(|x| x.to_string())
             .unwrap_or("Proposal".to_string());
 
         let proposal_status = &self.status.to_icon();
+
+        let proposal_state = self.proposal_state();
 
         let css_style = r#"body {
                   font-family: Arial, sans-serif;
@@ -532,7 +517,7 @@ impl ProposalExt {
                 .description {
                   margin-top: 30px;
                 }
-                .description p {
+                .description span {
                   max-height: 300px;
                   overflow: hidden;
                 }
@@ -585,6 +570,30 @@ impl ProposalExt {
                   background-color: #373b41;
                   cursor: pointer;
                 }
+
+                #status-btn {
+                  padding: 10px;
+                  background-color: #2E3440;
+                  color: white;
+                  border: none;
+                  cursor: pointer;
+                }
+
+                #status-btn:hover {
+                  background-color: #3B4252;
+                }
+
+                #status-btn:active {
+                  background-color: #4C566A;
+                }
+
+                #status-text {
+                  display: none;
+                  padding: 10px;
+                  background-color: #4C566A;
+                  color: white;
+                  border: 1px solid #D8DEE9;
+                }
         "#;
 
         format!(
@@ -612,9 +621,8 @@ impl ProposalExt {
     </div>
     <div id=\"fraud-alert\"></div>
     <div class=\"button-container\">
-  <button class=\"status-button\"><span>&#x1F6A7;</span> Status</button>
-  <button class=\"briefing-button\"><span>&#x1F4DD;</span> Start Briefing</button>
-  <button class=\"station-button\"><span>&#x1F6A2;</span> Open Station</button>
+  <button id=\"status-btn\" onclick=\"toggleStatus()\">Status</button>
+  <div id=\"status-text\">{}</div>
 </div>
 
   </div>
@@ -636,8 +644,19 @@ impl ProposalExt {
             proposal_status,
             title,
             description,
+            proposal_state,
             fraud_risk.unwrap_or(1.0).to_string(),
-            r#"if (fraudRisk > 0.7) {
+            r#"
+            function toggleStatus() {
+      var statusText = document.getElementById("status-text");
+      if (statusText.style.display === "none") {
+        statusText.style.display = "block";
+      } else {
+        statusText.style.display = "none";
+      }
+    }
+
+            if (fraudRisk > 0.7) {
   const alertDiv = document.createElement('div');
   alertDiv.classList.add('alert');
 alertDiv.innerText = '🚨  Be cautious. Be careful, avoid suspicious links/URLs, and remember, if it seems too good to be true, it probably is. 🚨';
@@ -649,7 +668,7 @@ warningDiv.innerText = '⚠  Stay safe. Be cautious of links/URLs. ⚠';
 document.getElementById('fraud-alert').appendChild(warningDiv);
 }
   const showMoreBtn = document.getElementById('show-more-btn');
-  const description = document.querySelector('.description p');
+  const description = document.querySelector('.description span');
   showMoreBtn.addEventListener('click', () => {
     description.style.maxHeight = 'none';
     showMoreBtn.style.display = 'none';
