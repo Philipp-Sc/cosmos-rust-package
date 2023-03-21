@@ -525,6 +525,7 @@ impl ProposalExt {
                   display: inline-block;
                   max-height: 100px;
                   overflow: hidden;
+                  width: 100%;
                 }
                 .show-more {
                   margin-top: 10px;
