@@ -455,13 +455,15 @@ impl ProposalExt {
                   background-color: #2e3440;
                   border-radius: 5px;
                 }
-                h1 {
+                .title {
                   text-align: center;
                   font-size: 36px;
                   margin-top: 0;
                   background-color: #3b4252;
                   padding: 20px;
                   border-radius: 5px 5px 0 0;
+                  color: #88C0D0;
+
                 }
                 .description {
                   margin-top: 30px;
@@ -608,7 +610,7 @@ impl ProposalExt {
           </style>
         </head>
        <div class=\"container\">
-    <h1>{}</h1>
+    <h3 class=\"title\" >{}</h3>
 
     <h2>{}</h2>
     <h2>#{} - {}</h2>
@@ -623,7 +625,7 @@ impl ProposalExt {
     <div class=\"button-container\">
   <button id=\"status-btn\" onclick=\"toggleStatus()\">📊 Status</button>
   <button id=\"status-btn\" onclick=\"toggleStatus()\">📝 Start Briefing</button>
-  <button id=\"status-btn\" onclick=\"window.open({}, '_blank')\">Open in 🛰️/🅺</button>
+  <button id=\"status-btn\" onclick=\"window.open('{}', '_blank')\">Open in 🛰️/🅺</button>
 
   <div id=\"status-text\" style=\"display: none;\">{}</div>
 </div>
