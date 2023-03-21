@@ -473,7 +473,7 @@ impl ProposalExt {
                   padding: 20px;
                   border-radius: 0 0 5px 5px;
                 }
-                p {
+                span {
                   font-size: 18px;
                   line-height: 1.5;
                   margin-top: 20px;
@@ -522,7 +522,8 @@ impl ProposalExt {
                   margin-top: 30px;
                 }
                 .description span {
-                  max-height: 300px;
+                  display: inline-block;
+                  max-height: 100px;
                   overflow: hidden;
                 }
                 .show-more {
