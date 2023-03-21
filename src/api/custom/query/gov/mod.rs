@@ -425,8 +425,10 @@ impl ProposalExt {
         return "".to_string();
     }
 
-    pub fn title_and_description_to_hash(&mut self) -> u64 {
+    pub fn id_title_and_description_to_hash(&mut self) -> u64 {
         let mut s = DefaultHasher::new();
+        let proposal_id = self.proposal().map(|x| x.proposal_id.to_string()).unwrap_or("??".to_string());
+        proposal_id.hash(&mut s);
         &self.get_title_and_description().hash(&mut s);
         s.finish()
     }
