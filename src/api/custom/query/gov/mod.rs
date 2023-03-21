@@ -621,8 +621,11 @@ impl ProposalExt {
     </div>
     <div id=\"fraud-alert\"></div>
     <div class=\"button-container\">
-  <button id=\"status-btn\" onclick=\"toggleStatus()\">Status</button>
-  <div id=\"status-text\">{}</div>
+  <button id=\"status-btn\" onclick=\"toggleStatus()\">📊 Status</button>
+  <button id=\"status-btn\" onclick=\"toggleStatus()\">📝 Start Briefing</button>
+  <button id=\"status-btn\" onclick=\"window.open({}, '_blank')\">Open in 🛰️/🅺</button>
+
+  <div id=\"status-text\" style=\"display: none;\">{}</div>
 </div>
 
   </div>
@@ -644,6 +647,7 @@ impl ProposalExt {
             proposal_status,
             title,
             description,
+            gov_prop_link,
             proposal_state,
             fraud_risk.unwrap_or(1.0).to_string(),
             r#"
@@ -883,8 +887,7 @@ document.getElementById('fraud-alert').appendChild(warningDiv);
         }
 
         format!(
-            "#{}  -  {}\n\n{}\n\n{}",
-            proposal_id,
+            "{}\n\n{}\n\n{}",
             &self.status.to_string(),
             voting_state,
             tally_result,
