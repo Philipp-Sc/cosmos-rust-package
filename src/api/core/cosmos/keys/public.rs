@@ -199,7 +199,7 @@ impl PublicKey {
             BECH32_PUBKEY_DATA_PREFIX_SECP256K1.to_vec(),
             public_key.to_vec(),
         ]
-            .concat()
+        .concat()
     }
     /**
      * Gets a bech32-words pubkey from a compressed bytes Ed25519 public key.
@@ -211,7 +211,7 @@ impl PublicKey {
             BECH32_PUBKEY_DATA_PREFIX_ED25519.to_vec(),
             public_key.to_vec(),
         ]
-            .concat()
+        .concat()
     }
     /// Translate from a BECH32 prefixed key to a standard public key
     pub fn public_key_from_pubkey(pub_key: &[u8]) -> Result<Vec<u8>, TerraRustScriptError> {
@@ -232,11 +232,11 @@ impl PublicKey {
     }
 
     /**
-     * Gets a raw address from a compressed bytes public key.
-     *
-     * @param publicKey raw public key
+    * Gets a raw address from a compressed bytes public key.
+    *
+    * @param publicKey raw public key
 
-     */
+    */
 
     pub fn address_from_public_key(public_key: &[u8]) -> Vec<u8> {
         // Vec<bech32::u5> {
@@ -253,11 +253,11 @@ impl PublicKey {
         address
     }
     /**
-     * Gets a raw address from a  ed25519 public key.
-     *
-     * @param publicKey raw public key
+    * Gets a raw address from a  ed25519 public key.
+    *
+    * @param publicKey raw public key
 
-     */
+    */
 
     pub fn address_from_public_ed25519_key(
         public_key: &[u8],

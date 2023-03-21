@@ -20,7 +20,7 @@ use tonic::transport::Channel;
 
 use cosmos_sdk_proto::cosmos::gov::v1beta1::query_client::QueryClient as GovQueryClient;
 use cosmos_sdk_proto::cosmos::gov::v1beta1::{
-    /*QueryProposalRequest, */QueryProposalsRequest, QueryProposalsResponse,
+    /*QueryProposalRequest, */ QueryProposalsRequest, QueryProposalsResponse,
 };
 
 pub async fn get_proposals(
@@ -102,11 +102,16 @@ mod test {
 
     #[tokio::test]
     pub async fn get_proposals() -> anyhow::Result<()> {
-        let channel = super::channels::get_supported_blockchains_from_chain_registry("./packages/chain-registry".to_string(),true,None)
-            .await.get("osmosis")
-            .unwrap()
-            .channel()
-            .await?;
+        let channel = super::channels::get_supported_blockchains_from_chain_registry(
+            "./packages/chain-registry".to_string(),
+            true,
+            None,
+        )
+        .await
+        .get("osmosis")
+        .unwrap()
+        .channel()
+        .await?;
         let res = super::get_proposals(
             channel,
             cosmos_sdk_proto::cosmos::gov::v1beta1::QueryProposalsRequest {
@@ -122,11 +127,16 @@ mod test {
 
     #[tokio::test]
     pub async fn cw20_balance_via_smart_contract_state() -> anyhow::Result<()> {
-        let channel = super::channels::get_supported_blockchains_from_chain_registry("./packages/chain-registry".to_string(),true,None)
-            .await.get("terra2")
-            .unwrap()
-            .channel()
-            .await?;
+        let channel = super::channels::get_supported_blockchains_from_chain_registry(
+            "./packages/chain-registry".to_string(),
+            true,
+            None,
+        )
+        .await
+        .get("terra2")
+        .unwrap()
+        .channel()
+        .await?;
         let query_msg = cw20::Cw20QueryMsg::Balance {
             address: cosmwasm_std::HumanAddr(
                 "terra1vcpt3p9p6rrqaw4zwt706p8vj7uhd0sf4p5snl".to_string(),
@@ -147,11 +157,16 @@ mod test {
 
     #[tokio::test]
     pub async fn query_account() -> anyhow::Result<()> {
-        let channel = super::channels::get_supported_blockchains_from_chain_registry("./packages/chain-registry".to_string(),true,None)
-            .await.get("terra2")
-            .unwrap()
-            .channel()
-            .await?;
+        let channel = super::channels::get_supported_blockchains_from_chain_registry(
+            "./packages/chain-registry".to_string(),
+            true,
+            None,
+        )
+        .await
+        .get("terra2")
+        .unwrap()
+        .channel()
+        .await?;
         let account = super::query_account(
             channel,
             "terra1dp0taj85ruc299rkdvzp4z5pfg6z6swaed74e6".to_string(),
@@ -164,11 +179,16 @@ mod test {
 
     #[tokio::test]
     pub async fn contract_info() -> anyhow::Result<()> {
-        let channel = super::channels::get_supported_blockchains_from_chain_registry("./packages/chain-registry".to_string(),true,None)
-            .await.get("terra2")
-            .unwrap()
-            .channel()
-            .await?;
+        let channel = super::channels::get_supported_blockchains_from_chain_registry(
+            "./packages/chain-registry".to_string(),
+            true,
+            None,
+        )
+        .await
+        .get("terra2")
+        .unwrap()
+        .channel()
+        .await?;
         let res = super::get_contract_info(
             channel,
             "terra1ccxwgew8aup6fysd7eafjzjz6hw89n40h273sgu3pl4lxrajnk5st2hvfh".to_string(),

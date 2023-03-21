@@ -2,35 +2,37 @@ use std::collections::HashMap;
 use tonic::transport::channel::Channel;
 
 use cosmos_sdk_proto::cosmos::base::tendermint::v1beta1::GetNodeInfoRequest;
+use lazy_static::lazy_static;
 use std::ffi::OsStr;
 use std::fmt::Debug;
 use std::fs::File;
 use std::io::BufReader;
 use std::process::Command;
 use std::process::Output;
-use lazy_static::lazy_static;
 use tokio::task::JoinSet;
 
-use serde::{Deserialize,Serialize};
+use serde::{Deserialize, Serialize};
 
 lazy_static! {
     static ref SUPPORTED_BLOCKCHAINS: HashMap<String, SupportedBlockchain> = {
-        let data = std::fs::read_to_string("./tmp/supported_blockchains.json").expect("Unable to read file");
-        let supported_blockchains: HashMap<String, SupportedBlockchain> = serde_json::from_str(&data).expect("Unable to parse JSON");
+        let data = std::fs::read_to_string("./tmp/supported_blockchains.json")
+            .expect("Unable to read file");
+        let supported_blockchains: HashMap<String, SupportedBlockchain> =
+            serde_json::from_str(&data).expect("Unable to parse JSON");
         supported_blockchains
     };
 }
 
-#[derive(Serialize,Deserialize,Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct SupportedBlockchain {
     pub display: String,
     pub name: String,
     pub prefix: String,
-    pub grpc_service:  GRPC_Service,
+    pub grpc_service: GRPC_Service,
     pub governance_proposals_link: String,
 }
 
-#[derive(Serialize,Deserialize,Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct GRPC_Service {
     pub grpc_url: Option<String>, // selected grpc_url
     pub error: Option<String>,    // error msg if no url could be selected
@@ -44,15 +46,13 @@ impl SupportedBlockchain {
                 self.name,
                 err.to_string()
             ))),
-            None => {
-                match &self.grpc_service.grpc_url {
-                    Some(grpc_url) => get_channel(grpc_url.to_owned()).await,
-                    None => Err(anyhow::anyhow!(format!(
-                                "Error: {} is not a supported cosmos blockchain: Error: Missing GRPC URL!",
-                                self.name,
-                            )))
-                }
-            }
+            None => match &self.grpc_service.grpc_url {
+                Some(grpc_url) => get_channel(grpc_url.to_owned()).await,
+                None => Err(anyhow::anyhow!(format!(
+                    "Error: {} is not a supported cosmos blockchain: Error: Missing GRPC URL!",
+                    self.name,
+                ))),
+            },
         }
     }
 }
@@ -81,7 +81,10 @@ async fn check_grpc_url(grpc_url: String) -> anyhow::Result<String> {
                 }
             }
         }
-        Err(e) => Err(anyhow::anyhow!(format!("tonic::transport::Endpoint::connect() failed: {}",e.to_string()))),
+        Err(e) => Err(anyhow::anyhow!(format!(
+            "tonic::transport::Endpoint::connect() failed: {}",
+            e.to_string()
+        ))),
     }
 }
 
@@ -95,24 +98,29 @@ pub async fn select_channel_from_grpc_endpoints(grpc_urls: &Vec<String>) -> anyh
     let mut errors: Vec<anyhow::Error> = Vec::new();
     while !join_set.is_empty() && channel.is_err() {
         match join_set.join_next().await {
-            Some(Ok(check)) => {
-                match check {
-                    Ok(passed) => {
-                        channel = Ok(passed);
-                    },
-                    Err(failed) => {
-                        errors.push(failed);
-                    }
+            Some(Ok(check)) => match check {
+                Ok(passed) => {
+                    channel = Ok(passed);
                 }
-            }
+                Err(failed) => {
+                    errors.push(failed);
+                }
+            },
             _ => {}
         }
     }
     join_set.shutdown().await;
 
     if channel.is_err() {
-        let error_msg: String = errors.into_iter().map(|err| err.to_string()).collect::<Vec<String>>().join(", ");
-        channel = Err(anyhow::anyhow!(format!("Error: No gRPC url passed the check! {}",error_msg)));
+        let error_msg: String = errors
+            .into_iter()
+            .map(|err| err.to_string())
+            .collect::<Vec<String>>()
+            .join(", ");
+        channel = Err(anyhow::anyhow!(format!(
+            "Error: No gRPC url passed the check! {}",
+            error_msg
+        )));
     }
     channel
 }
@@ -191,16 +199,12 @@ pub async fn get_supported_blockchains_from_chain_registry(
             Ok(grpc_url) => {
                 v.grpc_service.grpc_url = Some(grpc_url);
                 v.grpc_service.error = None;
-            },
+            }
             Err(err) => {
                 v.grpc_service.grpc_url = None;
-                v.grpc_service.error = Some(format!(
-                    "{}",
-                    err.to_string()
-                ));
-            },
+                v.grpc_service.error = Some(format!("{}", err.to_string()));
+            }
         }
-
     }
     supported_blockchains
 }

@@ -166,7 +166,7 @@ pub async fn simulate_tx(tx_bytes: Vec<u8>) -> anyhow::Result<()> {
     let res = ServiceClient::connect("http://osmosis.strange.love:9090")
         .await?
         .simulate(SimulateRequest {
-            tx: None,           // deprecated
+            tx: None, // deprecated
             tx_bytes, //prost::Message::encode_to_vec(&transaction),
         })
         .await?
