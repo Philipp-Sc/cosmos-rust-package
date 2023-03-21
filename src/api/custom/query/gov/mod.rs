@@ -441,6 +441,8 @@ impl ProposalExt {
 
         let proposal_state = self.proposal_state();
 
+        let proposal_deposit_period = self.status == ProposalStatus::StatusDepositPeriod;
+
         let css_style = r#"body {
                   font-family: Arial, sans-serif;
                   margin: 0;
@@ -632,7 +634,8 @@ impl ProposalExt {
 
   </div>
   <script>
-    const fraudRisk = {}; // replace with actual fraud risk value
+    const fraudRisk = {};
+    const depositPeriod = {};
     {}
 </script>
 <footer>
@@ -652,6 +655,7 @@ impl ProposalExt {
             gov_prop_link,
             proposal_state,
             fraud_risk.unwrap_or(1.0).to_string(),
+            proposal_deposit_period.to_string(),
             r#"
             function toggleStatus() {
       var statusText = document.getElementById("status-text");
@@ -663,16 +667,22 @@ impl ProposalExt {
     }
 
             if (fraudRisk > 0.7) {
-  const alertDiv = document.createElement('div');
-  alertDiv.classList.add('alert');
-alertDiv.innerText = '🚨  Be cautious. Be careful, avoid suspicious links/URLs, and remember, if it seems too good to be true, it probably is. 🚨';
-document.getElementById('fraud-alert').appendChild(alertDiv);
-} else if (fraudRisk > 0.4) {
-const warningDiv = document.createElement('div');
-warningDiv.classList.add('warning');
-warningDiv.innerText = '⚠  Stay safe. Be cautious of links/URLs. ⚠';
-document.getElementById('fraud-alert').appendChild(warningDiv);
-}
+                const alertDiv = document.createElement('div');
+                alertDiv.classList.add('alert');
+                alertDiv.innerText = '🚨 ALERT: High fraud risk. Be careful, avoid suspicious links/URLs, and remember, if it seems too good to be true, it probably is. 🚨';
+                document.getElementById('fraud-alert').appendChild(alertDiv);
+            } else if (fraudRisk > 0.4) {
+                const warningDiv = document.createElement('div');
+                warningDiv.classList.add('warning');
+                warningDiv.innerText = '⚠ WARNING: Verify URLs and proposal before interacting. Stay safe! ⚠';
+                document.getElementById('fraud-alert').appendChild(warningDiv);
+            }
+            else if (depositPeriod) {
+                const warningDiv = document.createElement('div');
+                warningDiv.classList.add('warning');
+                warningDiv.innerText = '⚠ CAUTION: Higher fraud risk during deposit period. Verify URLs and proposals before interacting. Stay safe! ⚠';
+                document.getElementById('fraud-alert').appendChild(warningDiv);
+            }
   const showMoreBtn = document.getElementById('show-more-btn');
   const description = document.querySelector('.description span');
   showMoreBtn.addEventListener('click', () => {
