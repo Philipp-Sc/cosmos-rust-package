@@ -617,8 +617,8 @@ impl ProposalExt {
 
   </body>
         </html>",
-            css_style,
             proposal_id,
+            css_style,
             blockchain_name,
             proposal_type,
             proposal_id,
