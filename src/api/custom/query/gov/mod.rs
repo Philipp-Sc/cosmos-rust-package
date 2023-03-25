@@ -314,7 +314,7 @@ impl ProposalExt {
     }
 
     pub fn get_title_and_description(&mut self) -> (String, String) {
-        match &self.content() {
+        let (title, mut description) = match &self.content() {
             Some(ProposalContent::TextProposal(Some(p))) => {
                 (p.title.to_owned(), p.description.to_owned())
             }
@@ -384,7 +384,8 @@ impl ProposalExt {
                 "ProposalDecodeErrorDescription".to_string(),
                 "ProposalDecodeErrorDescription".to_string(),
             ),
-        }
+        };
+        (title,description.replace("\\n", "\n"))
     }
 
     pub fn timestamp_to_string(item: Option<Timestamp>) -> String {
