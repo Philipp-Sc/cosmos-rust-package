@@ -19,6 +19,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 use cosmos_sdk_proto::cosmos::base::query::v1beta1::PageRequest;
+use cosmos_sdk_proto::cosmos::gov::v1beta1::QueryTallyResultResponse;
 use linkify::LinkFinder;
 
 use prost::Message;
@@ -130,6 +131,36 @@ pub enum ProposalContent {
     UnpinCodesProposal(Option<cosmos_sdk_proto::cosmwasm::wasm::v1::UnpinCodesProposal>),
     UnknownProposalType(String),
 }
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct TallyExt {
+    pub yes: String,
+    pub abstain: String,
+    pub no: String,
+    pub no_with_veto: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct TallyResultExt {
+    pub tally: Option<TallyExt>,
+}
+
+impl TallyResultExt {
+    pub fn new(tally: QueryTallyResultResponse) -> Self {
+        TallyResultExt{ tally: if let Some(x) = tally.tally {
+                                    Some(TallyExt{
+                                        yes: x.yes,
+                                        abstain: x.abstain,
+                                        no: x.no,
+                                        no_with_veto: x.no_with_veto
+                                    })
+                                }else{
+                                    None
+                                }
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ProposalExt {
     pub blockchain_name: String,
@@ -482,17 +513,6 @@ impl ProposalExt {
         return "".to_string();
     }
 
-    pub fn id_title_and_description_to_hash(&mut self) -> u64 {
-        let mut s = DefaultHasher::new();
-        let proposal_id = self
-            .proposal()
-            .map(|x| x.proposal_id.to_string())
-            .unwrap_or("??".to_string());
-        proposal_id.hash(&mut s);
-        &self.get_title_and_description().hash(&mut s);
-        s.finish()
-    }
-
     pub fn governance_proposal_link(&mut self) -> String {
         let mut gov_prop_link = get_supported_blockchains()
             .get(&self.blockchain_name.to_lowercase())
@@ -721,6 +741,15 @@ impl ProposalExt {
             gov_prop_link
         )
     }
+}
+
+
+pub async fn get_tally(
+    blockchain: SupportedBlockchain,
+    proposal_id: u64) -> anyhow::Result<TallyResultExt> {
+    let channel = blockchain.channel().await?;
+    let res = cosmos::query::get_tally_result(channel, cosmos_sdk_proto::cosmos::gov::v1beta1::QueryTallyResultRequest{ proposal_id } ).await?;
+    Ok(TallyResultExt::new(res))
 }
 
 pub async fn get_proposals(
