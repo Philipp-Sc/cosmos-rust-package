@@ -156,7 +156,9 @@ impl fmt::Display for ParamsExt {
         let mut parts = Vec::new();
         if let Some(voting_params_ext) = &self.voting_params_ext {
             if let Some(voting_period) = &voting_params_ext.voting_period {
-                parts.push(format!("Voting period: {} seconds, {} nanos", voting_period.seconds, voting_period.nanos));
+                if voting_period.seconds != 0i64 || voting_period.nanos != 0i32 {
+                    parts.push(format!("Voting period: {}", voting_period.to_duration().to_string()));
+                }
             }
         }
         if let Some(deposit_params_ext) = &self.deposit_params_ext {
@@ -164,13 +166,19 @@ impl fmt::Display for ParamsExt {
                 .map(|coin_ext| format!("{} {}", coin_ext.amount, coin_ext.denom))
                 .collect::<Vec<_>>()
                 .join(", ");
-            parts.push(format!("Min deposit: {}", min_deposit_str));
+            if !min_deposit_str.is_empty() {
+                parts.push(format!("Min deposit: {}", min_deposit_str));
+            }
             if let Some(max_deposit_period) = &deposit_params_ext.max_deposit_period {
-                parts.push(format!("Max deposit period: {} seconds, {} nanos", max_deposit_period.seconds, max_deposit_period.nanos));
+                if max_deposit_period.seconds != 0i64 || max_deposit_period.nanos != 0i32 {
+                    parts.push(format!("Max deposit period: {}", max_deposit_period.to_duration().to_string()));
+                }
             }
         }
         if let Some(tally_params_ext) = &self.tally_params_ext {
-            parts.push(format!("Quorum: {:.2}%, Threshold: {:.2}%, Veto threshold: {:.2}%", tally_params_ext.quorum * 100.0, tally_params_ext.threshold * 100.0, tally_params_ext.veto_threshold * 100.0));
+            if tally_params_ext.quorum != 0f64 || tally_params_ext.threshold != 0f64 || tally_params_ext.veto_threshold != 0f64 {
+                parts.push(format!("Quorum: {:.2}%, Threshold: {:.2}%, Veto threshold: {:.2}%", tally_params_ext.quorum * 100.0, tally_params_ext.threshold * 100.0, tally_params_ext.veto_threshold * 100.0));
+            }
         }
         write!(f, "{}", parts.join(", "))
     }
@@ -277,6 +285,33 @@ impl TallyResultExt {
                 no: x.no,
                 no_with_veto: x.no_with_veto
             })
+        }
+    }
+    pub fn spam_likelihood(&self) -> Option<f64> {
+        if let Some(tally) = &self.tally {
+                    if !(tally.yes == "0"
+                        && tally.abstain == "0"
+                        && tally.no == "0"
+                        && tally.no_with_veto == "0")
+                    {
+                        let abstain_num = tally.abstain.parse::<f64>().unwrap();
+                        let yes_num = tally.yes.parse::<f64>().unwrap();
+                        let no_num = tally.no.parse::<f64>().unwrap();
+                        let no_with_veto_num = tally.no_with_veto.parse::<f64>().unwrap();
+                        let total = (abstain_num + yes_num + no_num + no_with_veto_num) as f64;
+                        let abstain_num = abstain_num / total;
+                        let yes_num = yes_num / total;
+                        let no_num = no_num / total;
+                        let no_with_veto_num = no_with_veto_num / total;
+                        Some(
+                            ((2.0 * no_with_veto_num) + no_num - yes_num - (2.0 * abstain_num))
+                                / 2.0,
+                        )
+                    } else {
+                        None
+                    }
+                }else {
+            None
         }
     }
 }
