@@ -19,7 +19,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 use cosmos_sdk_proto::cosmos::base::query::v1beta1::PageRequest;
-use cosmos_sdk_proto::cosmos::gov::v1beta1::QueryTallyResultResponse;
+use cosmos_sdk_proto::cosmos::gov::v1beta1::{QueryParamsResponse, QueryTallyResultResponse};
 use linkify::LinkFinder;
 
 use prost::Message;
@@ -138,6 +138,74 @@ pub struct TallyExt {
     pub abstain: String,
     pub no: String,
     pub no_with_veto: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ParamsExt {
+    pub voting_params_ext: Option<VotingParamsExt>,
+    pub deposit_params_ext: Option<DepositParamsExt>,
+    pub tally_params_ext: Option<TallyParamsExt>,
+}
+impl ParamsExt {
+    pub fn new(params: QueryParamsResponse) -> Self {
+        ParamsExt {
+            voting_params_ext: if let Some(x) = params.voting_params {
+                Some(VotingParamsExt{
+                    voting_period: if let Some(y) = x.voting_period {
+                        Some(DurationExt{seconds: y.seconds, nanos: y.nanos})
+                    }else{None}
+                })
+            }else{None},
+            deposit_params_ext: if let Some(x) = params.deposit_params {
+                Some(DepositParamsExt{ min_deposit: x.min_deposit.into_iter().map(|y| CoinExt{ denom: y.denom, amount: y.amount }).collect(), max_deposit_period: if let Some(y) = x.max_deposit_period {
+                    Some(DurationExt{seconds: y.seconds, nanos: y.nanos})
+                }else{None} })
+            }else{None},
+            tally_params_ext:  if let Some(x) = params.tally_params {
+                Some(TallyParamsExt {
+                    quorum: x.quorum,
+                    threshold: x.threshold,
+                    veto_threshold: x.veto_threshold,
+                })
+            }else{None},
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct VotingParamsExt {
+    pub voting_period: Option<DurationExt>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct DurationExt {
+    pub seconds: i64,
+    pub nanos: i32,
+}
+
+impl DurationExt {
+    pub fn to_duration(&self) -> chrono::Duration {
+        chrono::Duration::from_std(std::time::Duration::new(self.seconds as u64, self.nanos as u32)).unwrap()
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct DepositParamsExt {
+    pub min_deposit: Vec<CoinExt>,
+    pub max_deposit_period: Option<DurationExt>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct CoinExt {
+    pub denom: String,
+    pub amount: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct TallyParamsExt {
+    pub quorum: Vec<u8>,
+    pub threshold: Vec<u8>,
+    pub veto_threshold: Vec<u8>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -743,6 +811,13 @@ impl ProposalExt {
     }
 }
 
+pub async fn get_params(
+    blockchain: SupportedBlockchain,
+    params_type: String) -> anyhow::Result<ParamsExt> {
+    let channel = blockchain.channel().await?;
+    let res = cosmos::query::get_params(channel, cosmos_sdk_proto::cosmos::gov::v1beta1::QueryParamsRequest{ params_type } ).await?;
+    Ok(ParamsExt::new(res))
+}
 
 pub async fn get_tally(
     blockchain: SupportedBlockchain,

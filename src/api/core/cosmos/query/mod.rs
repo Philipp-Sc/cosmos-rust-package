@@ -19,7 +19,19 @@ use tonic::transport::Channel;
 //use crate::api::core::cosmos::channels;
 
 use cosmos_sdk_proto::cosmos::gov::v1beta1::query_client::QueryClient as GovQueryClient;
-use cosmos_sdk_proto::cosmos::gov::v1beta1::{QueryProposalsRequest, QueryProposalsResponse, QueryTallyResultRequest, QueryTallyResultResponse};
+use cosmos_sdk_proto::cosmos::gov::v1beta1::{QueryProposalsRequest, QueryProposalsResponse, QueryTallyResultRequest, QueryParamsResponse as GovQueryParamsResponse,QueryParamsRequest as GovQueryParamsRequest,  QueryTallyResultResponse};
+
+pub async fn get_params(
+    channel: Channel,
+    query_tally_params_request: GovQueryParamsRequest,
+) -> anyhow::Result<GovQueryParamsResponse> {
+    let res = GovQueryClient::new(channel)
+        //.await?
+        .params(query_tally_params_request)
+        .await?
+        .into_inner();
+    Ok(res)
+}
 
 pub async fn get_tally_result(
     channel: Channel,
