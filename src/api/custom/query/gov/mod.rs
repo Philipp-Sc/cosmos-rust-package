@@ -157,7 +157,7 @@ impl fmt::Display for ParamsExt {
         if let Some(voting_params_ext) = &self.voting_params_ext {
             if let Some(voting_period) = &voting_params_ext.voting_period {
                 if voting_period.seconds != 0i64 || voting_period.nanos != 0i32 {
-                    parts.push(format!("Voting period: {}", voting_period.to_duration().to_string()));
+                    parts.push(format!("Voting period: {}", voting_period.get_formatted_duration()));
                 }
             }
         }
@@ -171,7 +171,7 @@ impl fmt::Display for ParamsExt {
             }
             if let Some(max_deposit_period) = &deposit_params_ext.max_deposit_period {
                 if max_deposit_period.seconds != 0i64 || max_deposit_period.nanos != 0i32 {
-                    parts.push(format!("Max deposit period: {}", max_deposit_period.to_duration().to_string()));
+                    parts.push(format!("Max deposit period: {}", max_deposit_period.get_formatted_duration()));
                 }
             }
         }
@@ -242,6 +242,22 @@ pub struct DurationExt {
 impl DurationExt {
     pub fn to_duration(&self) -> chrono::Duration {
         chrono::Duration::from_std(std::time::Duration::new(self.seconds as u64, self.nanos as u32)).unwrap()
+    }
+    pub fn get_formatted_duration(&self) -> String {
+        let seconds = self.to_duration().num_seconds();
+        let minutes = seconds / 60;
+        let hours = minutes / 60;
+        let days = hours / 24;
+
+        if days > 0 {
+            format!("{}d {}h {}m {}s", days, hours % 24, minutes % 60, seconds % 60)
+        } else if hours > 0 {
+            format!("{}h {}m {}s", hours, minutes % 60, seconds % 60)
+        } else if minutes > 0 {
+            format!("{}m {}s", minutes, seconds % 60)
+        } else {
+            format!("{}s", seconds)
+        }
     }
 }
 
@@ -331,8 +347,8 @@ impl fmt::Display for TallyResultExt {
             let no_with_veto_num =
                 f64::trunc(no_with_veto_num / total * 100.0 * 100.0) / 100.0;
             output = format!(
-                r#"Tally result: 👍 {}%, 👎 {}%, 🕊️ {}%, ❌ {}%"#,
-                yes_num, no_num, abstain_num, no_with_veto_num
+                r#"🗳 Current voting results: 👍 {}%, 👎 {}%, 🕊️ {}%, ❌ {}%  (total voted: {})"#,
+                yes_num, no_num, abstain_num, no_with_veto_num, total
             );
         }
         write!(f, "{}", output)
@@ -653,8 +669,8 @@ impl ProposalExt {
                         let no_with_veto_num =
                             f64::trunc(no_with_veto_num / total * 100.0 * 100.0) / 100.0;
                         return format!(
-                            r#"Final tally result: 👍 {}%, 👎 {}%, 🕊️ {}%, ❌ {}%"#,
-                            yes_num, no_num, abstain_num, no_with_veto_num
+                            r#"Final tally result: 👍 {}%, 👎 {}%, 🕊️ {}%, ❌ {}%  (total voted: {})"#,
+                            yes_num, no_num, abstain_num, no_with_veto_num, total
                         );
                     }
                 }
