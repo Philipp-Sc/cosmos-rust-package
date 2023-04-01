@@ -4,6 +4,7 @@ use prost_types::Timestamp;
 use std::cmp::Ordering;
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashSet;
+use std::fmt;
 use std::hash::{Hash, Hasher};
 
 use std::string::ToString;
@@ -29,6 +30,9 @@ lazy_static! {
     pub static ref LINK_MARKDOWN_REGEX: regex::Regex =
         Regex::new(r#"\[([^\]]+)\]\(([^\)"]+)\)"#).unwrap();
 }
+
+
+
 
 pub fn get_link_finder() -> LinkFinder {
     let mut finder = LinkFinder::new();
@@ -132,7 +136,7 @@ pub enum ProposalContent {
     UnknownProposalType(String),
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Hash)]
 pub struct TallyExt {
     pub yes: String,
     pub abstain: String,
@@ -140,12 +144,38 @@ pub struct TallyExt {
     pub no_with_veto: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Hash)]
 pub struct ParamsExt {
     pub voting_params_ext: Option<VotingParamsExt>,
     pub deposit_params_ext: Option<DepositParamsExt>,
     pub tally_params_ext: Option<TallyParamsExt>,
 }
+
+impl fmt::Display for ParamsExt {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut parts = Vec::new();
+        if let Some(voting_params_ext) = &self.voting_params_ext {
+            if let Some(voting_period) = &voting_params_ext.voting_period {
+                parts.push(format!("Voting period: {} seconds, {} nanos", voting_period.seconds, voting_period.nanos));
+            }
+        }
+        if let Some(deposit_params_ext) = &self.deposit_params_ext {
+            let min_deposit_str = deposit_params_ext.min_deposit.iter()
+                .map(|coin_ext| format!("{} {}", coin_ext.amount, coin_ext.denom))
+                .collect::<Vec<_>>()
+                .join(", ");
+            parts.push(format!("Min deposit: {}", min_deposit_str));
+            if let Some(max_deposit_period) = &deposit_params_ext.max_deposit_period {
+                parts.push(format!("Max deposit period: {} seconds, {} nanos", max_deposit_period.seconds, max_deposit_period.nanos));
+            }
+        }
+        if let Some(tally_params_ext) = &self.tally_params_ext {
+            parts.push(format!("Quorum: {:.2}%, Threshold: {:.2}%, Veto threshold: {:.2}%", tally_params_ext.quorum * 100.0, tally_params_ext.threshold * 100.0, tally_params_ext.veto_threshold * 100.0));
+        }
+        write!(f, "{}", parts.join(", "))
+    }
+}
+
 impl ParamsExt {
     pub fn new(params: QueryParamsResponse) -> Self {
         ParamsExt {
@@ -163,21 +193,39 @@ impl ParamsExt {
             }else{None},
             tally_params_ext:  if let Some(x) = params.tally_params {
                 Some(TallyParamsExt {
-                    quorum: x.quorum,
-                    threshold: x.threshold,
-                    veto_threshold: x.veto_threshold,
+                    quorum: {
+                        let dec_encoded: Vec<u8> = x.quorum;
+                        let decimal_string = String::from_utf8_lossy(&dec_encoded).to_string();
+                        let decimal_int = decimal_string.parse::<u128>().unwrap();
+                        let decimal = decimal_int as f64 / 10_u128.pow(18) as f64;
+                        decimal
+                    },
+                    threshold: {
+                        let dec_encoded: Vec<u8> = x.threshold;
+                        let decimal_string = String::from_utf8_lossy(&dec_encoded).to_string();
+                        let decimal_int = decimal_string.parse::<u128>().unwrap();
+                        let decimal = decimal_int as f64 / 10_u128.pow(18) as f64;
+                        decimal
+                    },
+                    veto_threshold: {
+                        let dec_encoded: Vec<u8> = x.veto_threshold;
+                        let decimal_string = String::from_utf8_lossy(&dec_encoded).to_string();
+                        let decimal_int = decimal_string.parse::<u128>().unwrap();
+                        let decimal = decimal_int as f64 / 10_u128.pow(18) as f64;
+                        decimal
+                    },
                 })
             }else{None},
         }
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone,PartialEq, Hash)]
 pub struct VotingParamsExt {
     pub voting_period: Option<DurationExt>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone,PartialEq, Hash)]
 pub struct DurationExt {
     pub seconds: i64,
     pub nanos: i32,
@@ -189,43 +237,70 @@ impl DurationExt {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone,PartialEq, Hash)]
 pub struct DepositParamsExt {
     pub min_deposit: Vec<CoinExt>,
     pub max_deposit_period: Option<DurationExt>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone,PartialEq, Hash)]
 pub struct CoinExt {
     pub denom: String,
     pub amount: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug,PartialEq, Clone)]
 pub struct TallyParamsExt {
-    pub quorum: Vec<u8>,
-    pub threshold: Vec<u8>,
-    pub veto_threshold: Vec<u8>,
+    pub quorum: f64,
+    pub threshold: f64,
+    pub veto_threshold: f64,
+}
+impl Hash for TallyParamsExt {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.quorum.to_bits().hash(state);
+        self.threshold.to_bits().hash(state);
+        self.veto_threshold.to_bits().hash(state);
+    }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone,PartialEq, Hash)]
 pub struct TallyResultExt {
     pub tally: Option<TallyExt>,
 }
 
 impl TallyResultExt {
     pub fn new(tally: QueryTallyResultResponse) -> Self {
-        TallyResultExt{ tally: if let Some(x) = tally.tally {
-                                    Some(TallyExt{
-                                        yes: x.yes,
-                                        abstain: x.abstain,
-                                        no: x.no,
-                                        no_with_veto: x.no_with_veto
-                                    })
-                                }else{
-                                    None
-                                }
+        TallyResultExt{
+            tally: tally.tally.map(|x| TallyExt {
+                yes: x.yes,
+                abstain: x.abstain,
+                no: x.no,
+                no_with_veto: x.no_with_veto
+            })
         }
+    }
+}
+
+impl fmt::Display for TallyResultExt {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut output = String::new();
+        if let Some(tally) = &self.tally {
+            let abstain_num = tally.abstain.parse::<f64>().unwrap();
+            let yes_num = tally.yes.parse::<f64>().unwrap();
+            let no_num = tally.no.parse::<f64>().unwrap();
+            let no_with_veto_num = tally.no_with_veto.parse::<f64>().unwrap();
+            let total = (abstain_num + yes_num + no_num + no_with_veto_num) as f64;
+            let abstain_num = f64::trunc(abstain_num / total * 100.0 * 100.0) / 100.0;
+            let yes_num = f64::trunc(yes_num / total * 100.0 * 100.0) / 100.0;
+            let no_num = f64::trunc(no_num / total * 100.0 * 100.0) / 100.0;
+            let no_with_veto_num =
+                f64::trunc(no_with_veto_num / total * 100.0 * 100.0) / 100.0;
+            output = format!(
+                r#"Tally result: 👍 {}%, 👎 {}%, 🕊️ {}%, ❌ {}%"#,
+                yes_num, no_num, abstain_num, no_with_veto_num
+            );
+        }
+        write!(f, "{}", output)
     }
 }
 
@@ -277,6 +352,13 @@ impl ProposalExt {
     }
 
     pub fn content(&mut self) -> Option<ProposalContent> {
+        macro_rules! try_decode {
+            ($type: ty, $proposal: ident) => {{
+                let encoded_any = &$proposal.encode_to_vec();
+                <$type>::decode(&encoded_any[..]).ok()
+            }};
+        }
+
         if self.content.is_none() {
             if let Some(p) = self.proposal() {
                 if let Some(p) = p.content {
@@ -306,9 +388,7 @@ impl ProposalExt {
                             )
                         }
                         "/osmosis.poolincentives.v1beta1.UpdatePoolIncentivesProposal" => {
-                            let encoded_any = &p.encode_to_vec();
-                            let decoded = osmosis_std::types::osmosis::poolincentives::v1beta1::UpdatePoolIncentivesProposal::decode(&encoded_any[..]).ok();
-                            ProposalContent::UpdatePoolIncentivesProposal(decoded)
+                            ProposalContent::UpdatePoolIncentivesProposal(try_decode!(osmosis_std::types::osmosis::poolincentives::v1beta1::UpdatePoolIncentivesProposal, p))
                         }
                         "/cosmwasm.wasm.v1.StoreCodeProposal" => {
                             ProposalContent::StoreCodeProposal(
@@ -321,24 +401,16 @@ impl ProposalExt {
                             )
                         }
                         "/osmosis.superfluid.v1beta1.RemoveSuperfluidAssetsProposal" => {
-                            let encoded_any = &p.encode_to_vec();
-                            let decoded = osmosis_std::types::osmosis::superfluid::v1beta1::RemoveSuperfluidAssetsProposal::decode(&encoded_any[..]).ok();
-                            ProposalContent::RemoveSuperfluidAssetsProposal(decoded)
+                            ProposalContent::RemoveSuperfluidAssetsProposal(try_decode!(osmosis_std::types::osmosis::superfluid::v1beta1::RemoveSuperfluidAssetsProposal, p))
                         }
                         "/osmosis.superfluid.v1beta1.SetSuperfluidAssetsProposal" => {
-                            let encoded_any = &p.encode_to_vec();
-                            let decoded = osmosis_std::types::osmosis::superfluid::v1beta1::SetSuperfluidAssetsProposal::decode(&encoded_any[..]).ok();
-                            ProposalContent::SetSuperfluidAssetsProposal(decoded)
+                            ProposalContent::SetSuperfluidAssetsProposal(try_decode!(osmosis_std::types::osmosis::superfluid::v1beta1::SetSuperfluidAssetsProposal,p))
                         }
                         "/osmosis.txfees.v1beta1.UpdateFeeTokenProposal" => {
-                            let encoded_any = &p.encode_to_vec();
-                            let decoded = osmosis_std::types::osmosis::txfees::v1beta1::UpdateFeeTokenProposal::decode(&encoded_any[..]).ok();
-                            ProposalContent::UpdateFeeTokenProposal(decoded)
+                            ProposalContent::UpdateFeeTokenProposal(try_decode!(osmosis_std::types::osmosis::txfees::v1beta1::UpdateFeeTokenProposal,p))
                         }
                         "/osmosis.poolincentives.v1beta1.ReplacePoolIncentivesProposal" => {
-                            let encoded_any = &p.encode_to_vec();
-                            let decoded = osmosis_std::types::osmosis::poolincentives::v1beta1::ReplacePoolIncentivesProposal::decode(&encoded_any[..]).ok();
-                            ProposalContent::ReplacePoolIncentivesProposal(decoded)
+                            ProposalContent::ReplacePoolIncentivesProposal(try_decode!(osmosis_std::types::osmosis::poolincentives::v1beta1::ReplacePoolIncentivesProposal,p))
                         }
                         "/cosmwasm.wasm.v1.MigrateContractProposal" => {
                             ProposalContent::MigrateContractProposal(
@@ -412,65 +484,40 @@ impl ProposalExt {
         }
     }
 
+
     pub fn get_title_and_description(&mut self) -> (String, String) {
-        let (title, mut description) = match &self.content() {
-            Some(ProposalContent::TextProposal(Some(p))) => {
-                (p.title.to_owned(), p.description.to_owned())
-            }
-            Some(ProposalContent::CommunityPoolSpendProposal(Some(p))) => {
-                (p.title.to_owned(), p.description.to_owned())
-            }
-            Some(ProposalContent::ParameterChangeProposal(Some(p))) => {
-                (p.title.to_owned(), p.description.to_owned())
-            }
-            Some(ProposalContent::SoftwareUpgradeProposal(Some(p))) => {
-                (p.title.to_owned(), p.description.to_owned())
-            }
-            Some(ProposalContent::ClientUpdateProposal(Some(p))) => {
-                (p.title.to_owned(), p.description.to_owned())
-            }
-            Some(ProposalContent::UpdatePoolIncentivesProposal(Some(p))) => {
-                (p.title.to_owned(), p.description.to_owned())
-            }
-            Some(ProposalContent::StoreCodeProposal(Some(p))) => {
-                (p.title.to_owned(), p.description.to_owned())
-            }
-            Some(ProposalContent::RemoveSuperfluidAssetsProposal(Some(p))) => {
-                (p.title.to_owned(), p.description.to_owned())
-            }
-            Some(ProposalContent::InstantiateContractProposal(Some(p))) => {
-                (p.title.to_owned(), p.description.to_owned())
-            }
-            Some(ProposalContent::ReplacePoolIncentivesProposal(Some(p))) => {
-                (p.title.to_owned(), p.description.to_owned())
-            }
-            Some(ProposalContent::SetSuperfluidAssetsProposal(Some(p))) => {
-                (p.title.to_owned(), p.description.to_owned())
-            }
-            Some(ProposalContent::UpdateFeeTokenProposal(Some(p))) => {
-                (p.title.to_owned(), p.description.to_owned())
-            }
-            Some(ProposalContent::MigrateContractProposal(Some(p))) => {
-                (p.title.to_owned(), p.description.to_owned())
-            }
-            Some(ProposalContent::UpdateInstantiateConfigProposal(Some(p))) => {
-                (p.title.to_owned(), p.description.to_owned())
-            }
-            Some(ProposalContent::SudoContractProposal(Some(p))) => {
-                (p.title.to_owned(), p.description.to_owned())
-            }
-            Some(ProposalContent::ExecuteContractProposal(Some(p))) => {
-                (p.title.to_owned(), p.description.to_owned())
-            }
-            Some(ProposalContent::UpdateAdminProposal(Some(p))) => {
-                (p.title.to_owned(), p.description.to_owned())
-            }
-            Some(ProposalContent::ClearAdminProposal(Some(p))) => {
-                (p.title.to_owned(), p.description.to_owned())
-            }
-            Some(ProposalContent::UnpinCodesProposal(Some(p))) => {
-                (p.title.to_owned(), p.description.to_owned())
-            }
+        macro_rules! extract_title_and_description {
+            ($proposal:expr) => {
+                match $proposal.as_ref() {
+                    Some(p) => (p.title.to_owned(), p.description.to_owned()),
+                    None => ("Unknown".to_owned(), "No description available".to_owned()),
+                }
+            };
+        }
+
+        // store the result of &self.content() in a local variable
+        let content = &self.content();
+
+        let (title, mut description): (String, String) = match content {
+            Some(ProposalContent::TextProposal(p)) => extract_title_and_description!(p),
+            Some(ProposalContent::CommunityPoolSpendProposal(p)) => extract_title_and_description!(p),
+            Some(ProposalContent::ParameterChangeProposal(p)) => extract_title_and_description!(p),
+            Some(ProposalContent::SoftwareUpgradeProposal(p)) => extract_title_and_description!(p),
+            Some(ProposalContent::ClientUpdateProposal(p)) => extract_title_and_description!(p),
+            Some(ProposalContent::UpdatePoolIncentivesProposal(p)) => extract_title_and_description!(p),
+            Some(ProposalContent::StoreCodeProposal(p)) => extract_title_and_description!(p),
+            Some(ProposalContent::RemoveSuperfluidAssetsProposal(p)) => extract_title_and_description!(p),
+            Some(ProposalContent::InstantiateContractProposal(p)) => extract_title_and_description!(p),
+            Some(ProposalContent::ReplacePoolIncentivesProposal(p)) => extract_title_and_description!(p),
+            Some(ProposalContent::SetSuperfluidAssetsProposal(p)) => extract_title_and_description!(p),
+            Some(ProposalContent::UpdateFeeTokenProposal(p)) => extract_title_and_description!(p),
+            Some(ProposalContent::MigrateContractProposal(p)) => extract_title_and_description!(p),
+            Some(ProposalContent::UpdateInstantiateConfigProposal(p)) => extract_title_and_description!(p),
+            Some(ProposalContent::SudoContractProposal(p)) => extract_title_and_description!(p),
+            Some(ProposalContent::ExecuteContractProposal(p)) => extract_title_and_description!(p),
+            Some(ProposalContent::UpdateAdminProposal(p)) => extract_title_and_description!(p),
+            Some(ProposalContent::ClearAdminProposal(p)) => extract_title_and_description!(p),
+            Some(ProposalContent::UnpinCodesProposal(p)) => extract_title_and_description!(p),
             Some(ProposalContent::UnknownProposalType(type_url)) => (
                 "UnknownTitle".to_string(),
                 format!("UnknownDescription\n\nType URL:\n{}", type_url),
@@ -484,7 +531,7 @@ impl ProposalExt {
                 "ProposalDecodeErrorDescription".to_string(),
             ),
         };
-        (title,description.replace("\\n", "\n"))
+        (title, description.replace("\\n", "\n"))
     }
 
     pub fn timestamp_to_string(item: Option<Timestamp>) -> String {
@@ -550,7 +597,7 @@ impl ProposalExt {
         return None;
     }
 
-    pub fn get_tally_result(&mut self) -> String {
+    pub fn get_final_tally_result(&mut self) -> String {
         if let Some(proposal) = self.proposal() {
             match proposal.final_tally_result.as_ref() {
                 None => {}
@@ -571,7 +618,7 @@ impl ProposalExt {
                         let no_with_veto_num =
                             f64::trunc(no_with_veto_num / total * 100.0 * 100.0) / 100.0;
                         return format!(
-                            r#"👍 {}%, 👎 {}%, 🕊️ {}%, ❌ {}%"#,
+                            r#"Final tally result: 👍 {}%, 👎 {}%, 🕊️ {}%, ❌ {}%"#,
                             yes_num, no_num, abstain_num, no_with_veto_num
                         );
                     }
@@ -659,7 +706,7 @@ impl ProposalExt {
 
     pub fn proposal_state(&mut self) -> String {
         let (voting_start_text, voting_end_text) = self.get_voting_start_and_end();
-        let mut tally_result = self.get_tally_result();
+        let mut tally_result = self.get_final_tally_result();
         let mut proposal_id = self
             .proposal()
             .map(|x| x.proposal_id.to_string())
@@ -713,7 +760,7 @@ impl ProposalExt {
 
         format!(
             "{}\n\n{}\n\n{}",
-            &self.status.to_string(),
+            &self.status.to_icon(),
             voting_state,
             tally_result,
         )
@@ -722,7 +769,7 @@ impl ProposalExt {
     pub fn proposal_details(&mut self, fraud_classification: Option<f64>) -> String {
         let (title, mut description) = self.get_title_and_description();
         let (voting_start, voting_end) = self.get_voting_start_and_end();
-        let mut tally_result = self.get_tally_result();
+        let mut tally_result = self.get_final_tally_result();
         let mut gov_prop_link = get_supported_blockchains()
             .get(&self.blockchain_name.to_lowercase())
             .unwrap()
