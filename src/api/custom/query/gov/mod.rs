@@ -13,7 +13,7 @@ use strum_macros::EnumIter;
 
 use chrono::NaiveDateTime;
 use chrono::{DateTime, Utc};
-use prost::EncodeError;
+use cosmos_sdk_proto::prost::EncodeError;
 
 use lazy_static::lazy_static;
 use regex::Regex;
@@ -23,7 +23,7 @@ use cosmos_sdk_proto::cosmos::base::query::v1beta1::PageRequest;
 use cosmos_sdk_proto::cosmos::gov::v1beta1::{QueryParamsResponse, QueryTallyResultResponse};
 use linkify::LinkFinder;
 
-use prost::Message;
+use cosmos_sdk_proto::prost::Message;
 
 lazy_static! {
     pub static ref LINK_FINDER: LinkFinder = get_link_finder();
@@ -397,7 +397,7 @@ impl ProposalExt {
     }
     pub fn proposal(&mut self) -> Option<cosmos_sdk_proto::cosmos::gov::v1beta1::Proposal> {
         if self.proposal.is_none() {
-            self.proposal = prost::Message::decode(&self.proposal_bytes[..]).ok();
+            self.proposal = cosmos_sdk_proto::prost::Message::decode(&self.proposal_bytes[..]).ok();
         }
         self.proposal.clone()
     }

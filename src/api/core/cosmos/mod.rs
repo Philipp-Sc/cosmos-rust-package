@@ -5,7 +5,7 @@ use cosmrs::tx::Fee;
 use cosmrs::tx::SignDoc;
 use cosmrs::tx::SignerInfo;
 use cosmrs::Coin;
-use prost_types::Any;
+use cosmos_sdk_proto::Any;
 
 use cosmos_sdk_proto::cosmos::auth::v1beta1::BaseAccount;
 use cosmos_sdk_proto::cosmos::crypto::secp256k1::PubKey;
