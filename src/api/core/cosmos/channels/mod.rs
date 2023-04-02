@@ -69,26 +69,29 @@ async fn get_channel(grpc_url: String) -> anyhow::Result<Channel> {
 }
 
 async fn check_grpc_url(grpc_url: String) -> anyhow::Result<String> {
-    info!("checking grpc url for {}",grpc_url);
     match get_channel(grpc_url.to_owned()).await {
         Ok(c) => {
             match cosmos_sdk_proto::cosmos::base::tendermint::v1beta1::service_client::ServiceClient::new(c).get_node_info(GetNodeInfoRequest{}).await {
                 Ok(node_info_response) => {
+                    info!("Successful GetNodeInfoResponse for {}",grpc_url);
                     debug!("GetNodeInfoResponse: {:?}",node_info_response);
                     // TODO potentially check versions, check if the node is up to par.
                     Ok(grpc_url)
                 },
                 Err(e) => {
-                    error!("GetNodeInfoRequest failed: {:?}",e);
+                    error!("GetNodeInfoRequest failed for {}: {:?}",grpc_url,e);
                     //println!("{:?}",e);
                     Err(anyhow::anyhow!(format!("GetNodeInfoRequest failed: {}",e.to_string())))
                 }
             }
         }
-        Err(e) => Err(anyhow::anyhow!(format!(
+        Err(e) => {
+            error!("Unable to establish a connection to {}: {:?}",grpc_url,e);
+            Err(anyhow::anyhow!(format!(
             "tonic::transport::Endpoint::connect() failed: {}",
             e.to_string()
-        ))),
+        )))
+        },
     }
 }
 
