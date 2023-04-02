@@ -9,6 +9,7 @@ use std::fs::File;
 use std::io::BufReader;
 use std::process::Command;
 use std::process::Output;
+use log::{debug, error, info};
 use tokio::task::JoinSet;
 
 use serde::{Deserialize, Serialize};
@@ -68,14 +69,17 @@ async fn get_channel(grpc_url: String) -> anyhow::Result<Channel> {
 }
 
 async fn check_grpc_url(grpc_url: String) -> anyhow::Result<String> {
+    info!("checking grpc url for {}",grpc_url);
     match get_channel(grpc_url.to_owned()).await {
         Ok(c) => {
             match cosmos_sdk_proto::cosmos::base::tendermint::v1beta1::service_client::ServiceClient::new(c).get_node_info(GetNodeInfoRequest{}).await {
-                Ok(_node_info_response) => {
+                Ok(node_info_response) => {
+                    debug!("GetNodeInfoResponse: {:?}",node_info_response);
                     // TODO potentially check versions, check if the node is up to par.
                     Ok(grpc_url)
                 },
                 Err(e) => {
+                    error!("GetNodeInfoRequest failed: {:?}",e);
                     //println!("{:?}",e);
                     Err(anyhow::anyhow!(format!("GetNodeInfoRequest failed: {}",e.to_string())))
                 }
