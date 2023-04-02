@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use tonic::transport::channel::Channel;
 
-use cosmos_sdk_proto::cosmos::base::tendermint::v1beta1::GetNodeInfoRequest;
+use cosmos_sdk_proto::cosmos::base::tendermint::v1beta1::{GetLatestBlockRequest, GetNodeInfoRequest};
 use lazy_static::lazy_static;
 use std::ffi::OsStr;
 use std::fmt::Debug;
@@ -71,17 +71,17 @@ async fn get_channel(grpc_url: String) -> anyhow::Result<Channel> {
 async fn check_grpc_url(grpc_url: String) -> anyhow::Result<String> {
     match get_channel(grpc_url.to_owned()).await {
         Ok(c) => {
-            match cosmos_sdk_proto::cosmos::base::tendermint::v1beta1::service_client::ServiceClient::new(c).get_node_info(GetNodeInfoRequest{}).await {
+            match cosmos_sdk_proto::cosmos::base::tendermint::v1beta1::service_client::ServiceClient::new(c).get_latest_block(GetLatestBlockRequest{})/*.get_node_info(GetNodeInfoRequest{})*/.await {
                 Ok(node_info_response) => {
-                    info!("Successful GetNodeInfoResponse for {}",grpc_url);
-                    debug!("GetNodeInfoResponse: {:?}",node_info_response);
+                    info!("Successful GetLatestBlockRequest for {}",grpc_url);
+                    debug!("GetLatestBlockRequest: {:?}",node_info_response);
                     // TODO potentially check versions, check if the node is up to par.
                     Ok(grpc_url)
                 },
                 Err(e) => {
-                    error!("GetNodeInfoRequest failed for {}: {:?}",grpc_url,e);
+                    error!("GetLatestBlockRequest failed for {}: {:?}",grpc_url,e);
                     //println!("{:?}",e);
-                    Err(anyhow::anyhow!(format!("GetNodeInfoRequest failed: {}",e.to_string())))
+                    Err(anyhow::anyhow!(format!("GetLatestBlockRequest failed: {}",e.to_string())))
                 }
             }
         }
