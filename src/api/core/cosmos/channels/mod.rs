@@ -137,15 +137,15 @@ pub async fn select_channel_from_grpc_endpoints(key_grpc_url_list: Vec<(String,V
 pub async fn select_channel_from_grpc_endpoints(key_grpc_url_list: Vec<(String,Vec<String>)>) -> Vec<(String,Result<String, anyhow::Error>)> {
     let mut join_set: JoinSet<_> = JoinSet::new();
 
-    //let mut key_abort_handles: HashMap<String,Vec<AbortHandle>> = HashMap::new();
+    let mut key_abort_handles: HashMap<String,Vec<AbortHandle>> = HashMap::new();
 
     for each in key_grpc_url_list.into_iter() {
-        //let mut abort_handles: Vec<AbortHandle> = Vec::new();
+        let mut abort_handles: Vec<AbortHandle> = Vec::new();
         let key = each.0.clone();
         for grpc_url in each.1.into_iter() {
             let key_clone = key.clone();
 
-            /*abort_handles.push(*/join_set.spawn(async move {
+            abort_handles.push(join_set.spawn(async move {
                 (key_clone, match  check_grpc_url(grpc_url).await {
                         Ok(passed) => {
                             Ok(passed)
@@ -154,22 +154,23 @@ pub async fn select_channel_from_grpc_endpoints(key_grpc_url_list: Vec<(String,V
                             Err(failed)
                         }
                 })
-            })/*)*/;
+            }));
         }
-        //key_abort_handles.insert(each.0.to_owned(),abort_handles);
+        key_abort_handles.insert(each.0.to_owned(),abort_handles);
     }
     let mut channels: Vec<(String,Result<String, anyhow::Error>)> = Vec::new();
 
     while let Some(res) = join_set.join_next().await {
+        info!("join_set.len(): {}",join_set.len());
         match res {
             Ok((key,result)) => {
-                /*if result.is_ok() {
+                if result.is_ok() {
                     if let Some(irrelevant) = key_abort_handles.remove(&key) {
                         for each in irrelevant {
                             each.abort();
                         }
                     }
-                }*/
+                }
                 channels.push((key,result));
             },
             Err(err) => {
