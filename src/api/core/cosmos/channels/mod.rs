@@ -99,6 +99,7 @@ async fn check_grpc_url(grpc_url: String) -> anyhow::Result<String> {
 }
 
 pub async fn select_channel_from_grpc_endpoints(grpc_urls: &Vec<String>) -> anyhow::Result<String> {
+    info!("Testing given gRPC urls: {:?}",grpc_urls);
     let mut join_set: JoinSet<anyhow::Result<String>> = JoinSet::new();
     for grpc_url in grpc_urls.iter().map(|x| x.to_owned()) {
         join_set.spawn(async move { check_grpc_url(grpc_url).await });
@@ -127,7 +128,9 @@ pub async fn select_channel_from_grpc_endpoints(grpc_urls: &Vec<String>) -> anyh
             break;
         }
     }
-    join_set.shutdown().await;
+    join_set.abort_all();
+    //join_set.shutdown().await;
+
 
     if channel.is_err() {
         let error_msg: String = errors
@@ -139,7 +142,9 @@ pub async fn select_channel_from_grpc_endpoints(grpc_urls: &Vec<String>) -> anyh
             "Error: No gRPC url passed the check! {}",
             error_msg
         )));
+        error!("Failed to select a gRPC URL!");
     }
+    info!("Selected gRPC URL successfully.");
     channel
 }
 
