@@ -64,7 +64,7 @@ impl SupportedBlockchain {
 async fn get_channel(grpc_url: String) -> anyhow::Result<Channel> {
     let endpoint =
         tonic::transport::Endpoint::new(grpc_url.parse::<tonic::transport::Uri>().unwrap())
-            .unwrap().connect_timeout(Duration::from_secs(60));
+            .unwrap().timeout(Duration::from_secs(60));
     match endpoint.connect().await {
         Ok(result) => Ok(result),
         Err(err) => Err(anyhow::anyhow!(err)),
