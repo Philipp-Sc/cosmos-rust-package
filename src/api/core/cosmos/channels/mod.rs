@@ -164,8 +164,10 @@ pub async fn select_channel_from_grpc_endpoints(key_grpc_url_list: Vec<(String,V
         match res {
             Ok((key,result)) => {
                 if result.is_ok() {
-                    for each in key_abort_handles.remove(&key).unwrap(){
-                        each.abort();
+                    if let Some(irrelevant) = key_abort_handles.remove(&key) {
+                        for each in irrelevant {
+                            each.abort();
+                        }
                     }
                 }
                 channels.push((key,result));
