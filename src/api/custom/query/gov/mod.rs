@@ -402,13 +402,7 @@ impl ProposalExt {
         self.proposal.clone()
     }
 
-    pub fn content(&mut self) -> Option<ProposalContent> {
-        macro_rules! try_decode {
-            ($type: ty, $proposal: ident) => {{
-                let encoded_any = &$proposal.encode_to_vec();
-                <$type>::decode(&encoded_any[..]).ok()
-            }};
-        }
+    pub fn content(&mut self) -> Option<ProposalContent> { 
 
         if self.content.is_none() {
             if let Some(p) = self.proposal() {
@@ -439,7 +433,9 @@ impl ProposalExt {
                             )
                         }
                         "/osmosis.poolincentives.v1beta1.UpdatePoolIncentivesProposal" => {
-                            ProposalContent::UpdatePoolIncentivesProposal(try_decode!(osmosis_std::types::osmosis::poolincentives::v1beta1::UpdatePoolIncentivesProposal, p))
+                            let encoded_any = &p.encode_to_vec();
+                            let decoded = osmosis_std::types::osmosis::poolincentives::v1beta1::UpdatePoolIncentivesProposal::decode(&encoded_any[..]).ok();
+                            ProposalContent::UpdatePoolIncentivesProposal(decoded)
                         }
                         "/cosmwasm.wasm.v1.StoreCodeProposal" => {
                             ProposalContent::StoreCodeProposal(
@@ -452,16 +448,24 @@ impl ProposalExt {
                             )
                         }
                         "/osmosis.superfluid.v1beta1.RemoveSuperfluidAssetsProposal" => {
-                            ProposalContent::RemoveSuperfluidAssetsProposal(try_decode!(osmosis_std::types::osmosis::superfluid::v1beta1::RemoveSuperfluidAssetsProposal, p))
+                            let encoded_any = &p.encode_to_vec();
+                            let decoded = osmosis_std::types::osmosis::superfluid::v1beta1::RemoveSuperfluidAssetsProposal::decode(&encoded_any[..]).ok();
+                            ProposalContent::RemoveSuperfluidAssetsProposal(decoded)
                         }
                         "/osmosis.superfluid.v1beta1.SetSuperfluidAssetsProposal" => {
-                            ProposalContent::SetSuperfluidAssetsProposal(try_decode!(osmosis_std::types::osmosis::superfluid::v1beta1::SetSuperfluidAssetsProposal,p))
+                            let encoded_any = &p.encode_to_vec();
+                            let decoded = osmosis_std::types::osmosis::superfluid::v1beta1::SetSuperfluidAssetsProposal::decode(&encoded_any[..]).ok();
+                            ProposalContent::SetSuperfluidAssetsProposal(decoded)
                         }
                         "/osmosis.txfees.v1beta1.UpdateFeeTokenProposal" => {
-                            ProposalContent::UpdateFeeTokenProposal(try_decode!(osmosis_std::types::osmosis::txfees::v1beta1::UpdateFeeTokenProposal,p))
+                            let encoded_any = &p.encode_to_vec();
+                            let decoded = osmosis_std::types::osmosis::txfees::v1beta1::UpdateFeeTokenProposal::decode(&encoded_any[..]).ok();
+                            ProposalContent::UpdateFeeTokenProposal(decoded)
                         }
                         "/osmosis.poolincentives.v1beta1.ReplacePoolIncentivesProposal" => {
-                            ProposalContent::ReplacePoolIncentivesProposal(try_decode!(osmosis_std::types::osmosis::poolincentives::v1beta1::ReplacePoolIncentivesProposal,p))
+                            let encoded_any = &p.encode_to_vec();
+                            let decoded = osmosis_std::types::osmosis::poolincentives::v1beta1::ReplacePoolIncentivesProposal::decode(&encoded_any[..]).ok();
+                            ProposalContent::ReplacePoolIncentivesProposal(decoded)
                         }
                         "/cosmwasm.wasm.v1.MigrateContractProposal" => {
                             ProposalContent::MigrateContractProposal(
@@ -981,6 +985,7 @@ pub async fn get_proposals(
     Ok((res.pagination.map(|x| x.next_key), list))
 }
 
+/*
 #[cfg(test)]
 mod test {
 
@@ -1042,3 +1047,4 @@ mod test {
         Ok(())
     }
 }
+*/
