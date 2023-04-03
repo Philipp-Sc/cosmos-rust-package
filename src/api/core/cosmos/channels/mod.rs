@@ -115,6 +115,7 @@ async fn check_grpc_url(grpc_url: String) -> anyhow::Result<String> {
 }
 
 
+/*
 pub async fn select_channel_from_grpc_endpoints(key_grpc_url_list: Vec<(String,Vec<String>)>) -> Vec<(String,Result<String, anyhow::Error>)> {
 
     let mut channels: Vec<(String,Result<String, anyhow::Error>)> = Vec::new();
@@ -132,8 +133,7 @@ pub async fn select_channel_from_grpc_endpoints(key_grpc_url_list: Vec<(String,V
         }
     }
     channels
-}
-/*
+}*/
 pub async fn select_channel_from_grpc_endpoints(key_grpc_url_list: Vec<(String,Vec<String>)>) -> Vec<(String,Result<String, anyhow::Error>)> {
     let mut join_set: JoinSet<_> = JoinSet::new();
 
@@ -180,7 +180,7 @@ pub async fn select_channel_from_grpc_endpoints(key_grpc_url_list: Vec<(String,V
     }
     join_set.shutdown().await;
     channels
-}*/
+}
 
 fn run_cmd(cmd: &str, args: Option<Vec<&str>>) -> anyhow::Result<Output> {
     let mut exit_output = Command::new(cmd);
