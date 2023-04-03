@@ -72,8 +72,10 @@ async fn get_channel(grpc_url: String) -> anyhow::Result<Channel> {
 }
 
 async fn check_grpc_url(grpc_url: String) -> anyhow::Result<String> {
+    info!("Testing gRPC URL: {}",grpc_url);
     match get_channel(grpc_url.to_owned()).await {
         Ok(c) => {
+            info!("Got Channel for gRPC URL: {}",grpc_url);
             match cosmos_sdk_proto::cosmos::base::tendermint::v1beta1::service_client::ServiceClient::new(c).get_node_info(GetNodeInfoRequest{}).await {
                 Ok(node_info_response) => {
                     info!("Successful GetNodeInfoResponse for {}",grpc_url);
