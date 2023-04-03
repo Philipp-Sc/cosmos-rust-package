@@ -181,7 +181,14 @@ pub async fn get_supported_blockchains_from_chain_registry(
             update = true;
         }
         if update {
-            run_cmd("git", Some(vec!["-C", path.as_str(), "pull"])).ok();
+            match run_cmd("git", Some(vec!["-C", path.as_str(), "pull"])) {
+                Ok(_) => {
+                    info!("git pull successful for {}",&path);
+                },
+                Err(e) => {
+                    error!("git pull failed for {}: {:?}",&path,e);
+                },
+            };
         }
     }
 
@@ -197,24 +204,19 @@ pub async fn get_supported_blockchains_from_chain_registry(
             .apis
             .grpc
             .iter()
-            .map(|x| format!("http://{}", x.address))
+            .map(|x| format!("https://{}", x.address))
             .collect();
         if let Some(ref hard_coded_grpc_url) = v.grpc_service.grpc_url {
             try_these_grpc_urls.push(hard_coded_grpc_url.to_owned());
         }
-        let mut count = 0;
-        while count<5 {
-            match select_channel_from_grpc_endpoints(&try_these_grpc_urls).await {
-                Ok(grpc_url) => {
-                    v.grpc_service.grpc_url = Some(grpc_url);
-                    v.grpc_service.error = None;
-                    count = 5;
-                }
-                Err(err) => {
-                    v.grpc_service.grpc_url = None;
-                    v.grpc_service.error = Some(format!("{}", err.to_string()));
-                    count += 1;
-                }
+        match select_channel_from_grpc_endpoints(&try_these_grpc_urls).await {
+            Ok(grpc_url) => {
+                v.grpc_service.grpc_url = Some(grpc_url);
+                v.grpc_service.error = None;
+            }
+            Err(err) => {
+                v.grpc_service.grpc_url = None;
+                v.grpc_service.error = Some(format!("{}", err.to_string()));
             }
         }
     }
