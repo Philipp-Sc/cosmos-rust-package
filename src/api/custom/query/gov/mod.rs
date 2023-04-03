@@ -402,7 +402,7 @@ impl ProposalExt {
         self.proposal.clone()
     }
 
-    pub fn content(&mut self) -> Option<ProposalContent> { 
+    pub fn content(&mut self) -> Option<ProposalContent> {
 
         if self.content.is_none() {
             if let Some(p) = self.proposal() {
@@ -433,8 +433,7 @@ impl ProposalExt {
                             )
                         }
                         "/osmosis.poolincentives.v1beta1.UpdatePoolIncentivesProposal" => {
-                            let encoded_any = &p.encode_to_vec();
-                            let decoded = osmosis_std::types::osmosis::poolincentives::v1beta1::UpdatePoolIncentivesProposal::decode(&encoded_any[..]).ok();
+                            let decoded = osmosis_std::types::osmosis::poolincentives::v1beta1::UpdatePoolIncentivesProposal::decode(&*p.value).ok();
                             ProposalContent::UpdatePoolIncentivesProposal(decoded)
                         }
                         "/cosmwasm.wasm.v1.StoreCodeProposal" => {
@@ -448,23 +447,19 @@ impl ProposalExt {
                             )
                         }
                         "/osmosis.superfluid.v1beta1.RemoveSuperfluidAssetsProposal" => {
-                            let encoded_any = &p.encode_to_vec();
-                            let decoded = osmosis_std::types::osmosis::superfluid::v1beta1::RemoveSuperfluidAssetsProposal::decode(&encoded_any[..]).ok();
+                            let decoded = osmosis_std::types::osmosis::superfluid::v1beta1::RemoveSuperfluidAssetsProposal::decode(&*p.value).ok();
                             ProposalContent::RemoveSuperfluidAssetsProposal(decoded)
                         }
                         "/osmosis.superfluid.v1beta1.SetSuperfluidAssetsProposal" => {
-                            let encoded_any = &p.encode_to_vec();
-                            let decoded = osmosis_std::types::osmosis::superfluid::v1beta1::SetSuperfluidAssetsProposal::decode(&encoded_any[..]).ok();
+                            let decoded = osmosis_std::types::osmosis::superfluid::v1beta1::SetSuperfluidAssetsProposal::decode(&*p.value).ok();
                             ProposalContent::SetSuperfluidAssetsProposal(decoded)
                         }
                         "/osmosis.txfees.v1beta1.UpdateFeeTokenProposal" => {
-                            let encoded_any = &p.encode_to_vec();
-                            let decoded = osmosis_std::types::osmosis::txfees::v1beta1::UpdateFeeTokenProposal::decode(&encoded_any[..]).ok();
+                            let decoded = osmosis_std::types::osmosis::txfees::v1beta1::UpdateFeeTokenProposal::decode(&*p.value).ok();
                             ProposalContent::UpdateFeeTokenProposal(decoded)
                         }
                         "/osmosis.poolincentives.v1beta1.ReplacePoolIncentivesProposal" => {
-                            let encoded_any = &p.encode_to_vec();
-                            let decoded = osmosis_std::types::osmosis::poolincentives::v1beta1::ReplacePoolIncentivesProposal::decode(&encoded_any[..]).ok();
+                            let decoded = osmosis_std::types::osmosis::poolincentives::v1beta1::ReplacePoolIncentivesProposal::decode(&*p.value).ok();
                             ProposalContent::ReplacePoolIncentivesProposal(decoded)
                         }
                         "/cosmwasm.wasm.v1.MigrateContractProposal" => {

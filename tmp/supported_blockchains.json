@@ -1,38 +1,142 @@
 {
+  "secretnetwork": {
+    "display": "🔒Secret Network",
+    "name": "Secret Network",
+    "prefix": "secret",
+    "grpc_service": {
+      "grpc_url": null,
+      "error": null
+    },
+    "governance_proposals_link": "https://wallet.keplr.app/chains/secretnetwork/proposals/"
+  },
   "terra": {
+    "display": "Terra Classic",
     "name": "Terra",
     "prefix": "terra",
-    "grpc_url": null,
+    "grpc_service": {
+      "grpc_url": null,
+      "error": null
+    },
     "governance_proposals_link": "https://station.terra.money/proposal/"
+  },
+  "chihuahua": {
+    "display": "🐕‍🦺 Chihuahua",
+    "name": "Chihuahua",
+    "prefix": "chihuahua",
+    "grpc_service": {
+      "grpc_url": null,
+      "error": null
+    },
+    "governance_proposals_link": "https://wallet.keplr.app/chains/chihuahua/proposals/"
+  },
+  "kava": {
+    "display": "🅺 Kava",
+    "name": "Kava",
+    "prefix": "kava",
+    "grpc_service": {
+      "grpc_url": null,
+      "error": null
+    },
+    "governance_proposals_link": "https://wallet.keplr.app/chains/kava/proposals/"
+  },
+  "axelar": {
+    "display": "🪙 Axelar",
+    "name": "axelar",
+    "prefix": "axelar",
+    "grpc_service": {
+      "grpc_url": null,
+      "error": null
+    },
+    "governance_proposals_link": "https://wallet.keplr.app/chains/axelar/proposals/"
+  },
+  "stargaze": {
+    "display": "🌟 Stargaze",
+    "name": "Stargaze",
+    "prefix": "stars",
+    "grpc_service": {
+      "grpc_url": null,
+      "error": null
+    },
+    "governance_proposals_link": "https://wallet.keplr.app/chains/stargaze/proposals/"
+  },
+  "mars": {
+    "display": "🪐 Mars",
+    "name": "Mars",
+    "prefix": "mars",
+    "grpc_service": {
+      "grpc_url": null,
+      "error": null
+    },
+    "governance_proposals_link": "https://wallet.keplr.app/chains/mars-hub/proposals/"
+  },
+  "evmos": {
+    "display": "☄️ Evmos",
+    "name": "Evmos",
+    "prefix": "evmos",
+    "grpc_service": {
+      "grpc_url": null,
+      "error": null
+    },
+    "governance_proposals_link": "https://wallet.keplr.app/chains/evmos/proposals/"
+  },
+  "sifchain": {
+    "display": "🎼 Sifchain",
+    "name": "Sifchain",
+    "prefix": "sif",
+    "grpc_service": {
+      "grpc_url": null,
+      "error": null
+    },
+    "governance_proposals_link": "https://wallet.keplr.app/chains/sifchain/proposals/"
   },
   "terra2": {
+    "display": "🌏 Terra 2.0",
     "name": "Terra2",
     "prefix": "terra",
-    "grpc_url": "http://n-fsn-7.zyons.com:29090",
-    "governance_proposals_link": "https://station.terra.money/proposal/"
+    "grpc_service": {
+      "grpc_url": "http://n-fsn-7.zyons.com:29090",
+      "error": null
+    },
+    "governance_proposals_link": "https://station.terra.money/proposal/phoenix-1/"
   },
   "osmosis": {
+    "display": "🧪 Osmosis",
     "name": "Osmosis",
     "prefix": "osmo",
-    "grpc_url": null,
+    "grpc_service": {
+      "grpc_url": null,
+      "error": null
+    },
     "governance_proposals_link": "https://wallet.keplr.app/chains/osmosis/proposals/"
   },
   "juno": {
+    "display": "🪐 Juno",
     "name": "Juno",
     "prefix": "juno",
-    "grpc_url": null,
+    "grpc_service": {
+      "grpc_url": null,
+      "error": null
+    },
     "governance_proposals_link": "https://wallet.keplr.app/chains/juno/proposals/"
   },
   "cosmoshub": {
-    "name": "CosmosHub",
+    "display": "🌌 Cosmos Hub",
+    "name": "Cosmoshub",
     "prefix": "atom",
-    "grpc_url": null,
+    "grpc_service": {
+      "grpc_url": null,
+      "error": null
+    },
     "governance_proposals_link": "https://wallet.keplr.app/chains/cosmos-hub/proposals/"
   },
   "kujira": {
+    "display": "🐋 Kujira",
     "name": "Kujira",
     "prefix": "kuji",
-    "grpc_url": null,
+    "grpc_service": {
+      "grpc_url": null,
+      "error": null
+    },
     "governance_proposals_link": "https://blue.kujira.app/govern/"
   }
 
