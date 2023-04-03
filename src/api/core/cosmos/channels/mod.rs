@@ -64,7 +64,7 @@ impl SupportedBlockchain {
 async fn get_channel(grpc_url: String) -> anyhow::Result<Channel> {
     let endpoint =
         tonic::transport::Endpoint::new(grpc_url.parse::<tonic::transport::Uri>().unwrap())
-            .unwrap()/*.connect_timeout(std::time::Duration::from_secs(60))*/;
+            .unwrap().connect_timeout(Duration::from_secs(60));
     match endpoint.connect().await {
         Ok(result) => Ok(result),
         Err(err) => Err(anyhow::anyhow!(err)),
@@ -99,30 +99,26 @@ async fn check_grpc_url(grpc_url: String) -> anyhow::Result<String> {
 }
 
 pub async fn select_channel_from_grpc_endpoints(grpc_urls: &Vec<String>) -> anyhow::Result<String> {
-    info!("Testing given gRPC URLs: {:?}",grpc_urls);
-    let mut join_set: JoinSet<anyhow::Result<String>> = JoinSet::new();
+    info!("Testing gRPC URLs: {:?}",grpc_urls);
+    let mut join_set: JoinSet<_> = JoinSet::new();
     for grpc_url in grpc_urls.iter().map(|x| x.to_owned()) {
-        join_set.spawn(async move { check_grpc_url(grpc_url).await });
+        join_set.spawn(async move { timeout(Duration::from_secs(60), check_grpc_url(grpc_url)).await });
     }
     let mut channel: Result<String, anyhow::Error> =
         Err(anyhow::anyhow!("Error: No gRPC URLs passed the check!"));
     let mut errors: Vec<anyhow::Error> = Vec::new();
 
-    let start_time = std::time::Instant::now();
-    let timeout_duration = Duration::from_secs(60);
-
     while !join_set.is_empty() && channel.is_err() {
-        if timeout_duration <= start_time.elapsed() {
-            error!("Timeout: Failed to select a gRPC URL in time.");
-            break;
-        }
-        match timeout(Duration::from_millis(100), join_set.join_next()).await {
-            Ok(Some(Ok(check))) => match check {
-                Ok(passed) => {
+        match join_set.join_next().await {
+            Some(Ok(check)) => match check {
+                Ok(Ok(passed)) => {
                     channel = Ok(passed);
                 }
-                Err(failed) => {
+                Ok(Err(failed)) => {
                     errors.push(failed);
+                }
+                Err(failed) => {
+                    errors.push(anyhow::anyhow!("Timeout: {:?}",failed));
                 }
             },
             _ => {}
@@ -138,12 +134,12 @@ pub async fn select_channel_from_grpc_endpoints(grpc_urls: &Vec<String>) -> anyh
             .collect::<Vec<String>>()
             .join(", ");
         channel = Err(anyhow::anyhow!(format!(
-            "Error: No gRPC URL passed the check! {}",
-            error_msg
+            "Error: Could not find valid gRPC URL: {}",
+            &error_msg
         )));
-        error!("Failed to select any gRPC URL.");
+        error!("Error: Could not find valid gRPC URL: {}",&error_msg);
     }
-    info!("Selected gRPC URL successfully.");
+    info!("Success: Found valid gRPC URL.");
     channel
 }
 
