@@ -61,7 +61,7 @@ impl SupportedBlockchain {
 async fn get_channel(grpc_url: String) -> anyhow::Result<Channel> {
     let endpoint =
         tonic::transport::Endpoint::new(grpc_url.parse::<tonic::transport::Uri>().unwrap())
-            .unwrap();
+            .unwrap().connect_timeout(std::time::Duration::from_secs(60));
     match endpoint.connect().await {
         Ok(result) => Ok(result),
         Err(err) => Err(anyhow::anyhow!(err)),
@@ -98,10 +98,7 @@ async fn check_grpc_url(grpc_url: String) -> anyhow::Result<String> {
 pub async fn select_channel_from_grpc_endpoints(grpc_urls: &Vec<String>) -> anyhow::Result<String> {
     let mut join_set: JoinSet<anyhow::Result<String>> = JoinSet::new();
     for grpc_url in grpc_urls.iter().map(|x| x.to_owned()) {
-        let https_grpc_url = format!("https://{}", grpc_url);
-        let http_grpc_url = format!("http://{}", grpc_url);
-        join_set.spawn(async move { check_grpc_url(http_grpc_url).await });
-        join_set.spawn(async move { check_grpc_url(https_grpc_url).await });
+        join_set.spawn(async move { check_grpc_url(grpc_url).await });
     }
     let mut channel: Result<String, anyhow::Error> =
         Err(anyhow::anyhow!("Error: No gRPC url passed the check!"));
@@ -213,14 +210,25 @@ pub async fn get_supported_blockchains_from_chain_registry(
         if let Some(ref hard_coded_grpc_url) = v.grpc_service.grpc_url {
             try_these_grpc_urls.push(hard_coded_grpc_url.to_owned());
         }
-        match select_channel_from_grpc_endpoints(&try_these_grpc_urls).await {
+
+        match select_channel_from_grpc_endpoints(&try_these_grpc_urls.into_iter().map(|grpc_url| format!("https://{}", grpc_url)).collect()).await {
             Ok(grpc_url) => {
                 v.grpc_service.grpc_url = Some(grpc_url);
                 v.grpc_service.error = None;
             }
             Err(err) => {
-                v.grpc_service.grpc_url = None;
-                v.grpc_service.error = Some(format!("{}", err.to_string()));
+                let grpc_service_error = format!("{:?}", err);
+
+                match select_channel_from_grpc_endpoints(&try_these_grpc_urls.into_iter().map(|grpc_url| format!("http://{}", grpc_url)).collect()).await {
+                    Ok(grpc_url) => {
+                        v.grpc_service.grpc_url = Some(grpc_url);
+                        v.grpc_service.error = None;
+                    }
+                    Err(err) => {
+                        v.grpc_service.grpc_url = None;
+                        v.grpc_service.error = Some(format!("https: {:?},\nhttp: {:?}", grpc_service_error, err));
+                    }
+                }
             }
         }
     }

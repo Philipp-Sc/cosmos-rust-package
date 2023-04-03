@@ -740,10 +740,10 @@ impl ProposalExt {
 
         if let Some(prediction) = fraud_classification {
             let label = if prediction >= 0.70 {
-                format!("🚨 ({})\nBe cautious. Check URLs, avoid suspicious links, and remember, if it seems too good to be true, it probably is.",((100.0*prediction).trunc()/100.0))
-            } else if prediction > 0.50 {
+                format!("🚨 ({}) FRAUD DETECTED",((100.0*prediction).trunc()/100.0))
+            } else if prediction > 0.40 {
                 format!(
-                    "⚠ ({})\nStay safe. Be cautious of links and URLs.",
+                    "⚠ ({}) SUSPICIOUS",
                     ((100.0 * prediction).trunc() / 100.0)
                 )
             } else {
@@ -873,7 +873,7 @@ impl ProposalExt {
         if let Some(prediction) = fraud_classification {
             if prediction >= 0.70 {
                 return format!(
-                    "{}\n{}\n#{}  -  {}\n{}\n\n{}\n\n🚨 ({})\nBe cautious. Check URLs, avoid suspicious links, and remember, if it seems too good to be true, it probably is.",
+                    "{}\n{}\n#{}  -  {}\n{}\n\n{}\n\n🚨 ({}) FRAUD DETECTED",
                     self.blockchain_name.clone(),
                     self.content().map(|x| x.to_string()).unwrap_or("Proposal".to_string()),
                     proposal_id,
@@ -882,9 +882,9 @@ impl ProposalExt {
                     gov_prop_link,
                     ((100.0*prediction).trunc()/100.0)
                 );
-            } else if prediction > 0.50 {
+            } else if prediction > 0.40 {
                 return format!(
-                    "{}\n{}\n#{}  -  {}\n{}\n{}\n{}\n{}\n{}\n{}\n\n⚠ ({})\nStay safe. Be cautious of links and URLs.",
+                    "{}\n{}\n#{}  -  {}\n{}\n{}\n{}\n{}\n{}\n{}\n\n⚠ ({}) SUSPICIOUS",
                     self.blockchain_name.clone(),
                     self.content().map(|x| x.to_string()).unwrap_or("Proposal".to_string()),
                     proposal_id,
