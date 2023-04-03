@@ -208,7 +208,7 @@ pub async fn get_supported_blockchains_from_chain_registry(
             .apis
             .grpc
             .iter()
-            .map(|x| x.address)
+            .map(|x| x.address.clone())
             .collect();
         if let Some(ref hard_coded_grpc_url) = v.grpc_service.grpc_url {
             try_these_grpc_urls.push(hard_coded_grpc_url.to_owned());
