@@ -99,19 +99,23 @@ async fn check_grpc_url(grpc_url: String) -> anyhow::Result<String> {
 }
 
 pub async fn select_channel_from_grpc_endpoints(grpc_urls: &Vec<String>) -> anyhow::Result<String> {
-    info!("Testing given gRPC urls: {:?}",grpc_urls);
+    info!("Testing given gRPC URLs: {:?}",grpc_urls);
     let mut join_set: JoinSet<anyhow::Result<String>> = JoinSet::new();
     for grpc_url in grpc_urls.iter().map(|x| x.to_owned()) {
         join_set.spawn(async move { check_grpc_url(grpc_url).await });
     }
     let mut channel: Result<String, anyhow::Error> =
-        Err(anyhow::anyhow!("Error: No gRPC url passed the check!"));
+        Err(anyhow::anyhow!("Error: No gRPC URLs passed the check!"));
     let mut errors: Vec<anyhow::Error> = Vec::new();
 
     let start_time = std::time::Instant::now();
     let timeout_duration = Duration::from_secs(60);
 
     while !join_set.is_empty() && channel.is_err() {
+        if timeout_duration <= start_time.elapsed() {
+            error!("Timeout: Failed to select a gRPC URL in time.");
+            break;
+        }
         match timeout(Duration::from_millis(100), join_set.join_next()).await {
             Ok(Some(Ok(check))) => match check {
                 Ok(passed) => {
@@ -123,13 +127,8 @@ pub async fn select_channel_from_grpc_endpoints(grpc_urls: &Vec<String>) -> anyh
             },
             _ => {}
         }
-        let elapsed_time = start_time.elapsed();
-        if elapsed_time > timeout_duration {
-            break;
-        }
     }
-    join_set.abort_all();
-    //join_set.shutdown().await;
+    join_set.shutdown().await;
 
 
     if channel.is_err() {
@@ -139,10 +138,10 @@ pub async fn select_channel_from_grpc_endpoints(grpc_urls: &Vec<String>) -> anyh
             .collect::<Vec<String>>()
             .join(", ");
         channel = Err(anyhow::anyhow!(format!(
-            "Error: No gRPC url passed the check! {}",
+            "Error: No gRPC URL passed the check! {}",
             error_msg
         )));
-        error!("Failed to select a gRPC URL!");
+        error!("Failed to select any gRPC URL.");
     }
     info!("Selected gRPC URL successfully.");
     channel
@@ -248,5 +247,6 @@ pub async fn get_supported_blockchains_from_chain_registry(
             }
         }
     }
+    info!("Got Supported Blockchains from Chain-Registry!");
     supported_blockchains
 }
