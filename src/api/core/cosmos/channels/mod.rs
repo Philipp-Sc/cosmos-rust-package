@@ -160,7 +160,7 @@ pub async fn select_channel_from_grpc_endpoints(key_grpc_url_list: Vec<(String,V
     }
     let mut channels: Vec<(String,Result<String, anyhow::Error>)> = Vec::new();
 
-    while let Some(res) = set.join_next().await {
+    while let Some(res) = join_set.join_next().await {
         match res {
             Ok((key,result)) => {
                 if result.is_ok() {
