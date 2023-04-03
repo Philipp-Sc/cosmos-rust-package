@@ -13,9 +13,7 @@ use log::{debug, error, info};
 use tokio::task::{AbortHandle, JoinSet};
 
 use serde::{Deserialize, Serialize};
-
-use std::time::Duration;
-use tokio::time::timeout;
+ 
 
 lazy_static! {
     static ref SUPPORTED_BLOCKCHAINS: HashMap<String, SupportedBlockchain> = {
@@ -128,19 +126,15 @@ pub async fn select_channel_from_grpc_endpoints(key_grpc_url_list: Vec<(String,V
             let key_clone = key.clone();
 
             abort_handles.push(join_set.spawn(async move {
-                (key_clone, match timeout(Duration::from_secs(60), check_grpc_url(grpc_url)).await {
-                        Ok(Ok(passed)) => {
+                (key_clone, match  check_grpc_url(grpc_url).await {
+                        Ok(passed) => {
                             Ok(passed)
                         }
-                        Ok(Err(failed)) => {
-                            Err(failed)
-                        }
                         Err(failed) => {
-                            Err(anyhow::anyhow!("Timeout: {:?}",failed))
+                            Err(failed)
                         }
                 })
             }));
-            tokio::time::sleep(Duration::from_millis(100)).await;
         }
         key_abort_handles.insert(each.0.to_owned(),abort_handles);
     }
