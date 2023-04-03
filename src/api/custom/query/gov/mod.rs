@@ -537,38 +537,64 @@ impl ProposalExt {
 
 
     pub fn get_title_and_description(&mut self) -> (String, String) {
-        macro_rules! extract_title_and_description {
-            ($proposal:expr) => {
-                match $proposal.as_ref() {
-                    Some(p) => (p.title.to_owned(), p.description.to_owned()),
-                    None => ("Unknown".to_owned(), "No description available".to_owned()),
-                }
-            };
-        }
-
-        // store the result of &self.content() in a local variable
-        let content = &self.content();
-
-        let (title, mut description): (String, String) = match content {
-            Some(ProposalContent::TextProposal(p)) => extract_title_and_description!(p),
-            Some(ProposalContent::CommunityPoolSpendProposal(p)) => extract_title_and_description!(p),
-            Some(ProposalContent::ParameterChangeProposal(p)) => extract_title_and_description!(p),
-            Some(ProposalContent::SoftwareUpgradeProposal(p)) => extract_title_and_description!(p),
-            Some(ProposalContent::ClientUpdateProposal(p)) => extract_title_and_description!(p),
-            Some(ProposalContent::UpdatePoolIncentivesProposal(p)) => extract_title_and_description!(p),
-            Some(ProposalContent::StoreCodeProposal(p)) => extract_title_and_description!(p),
-            Some(ProposalContent::RemoveSuperfluidAssetsProposal(p)) => extract_title_and_description!(p),
-            Some(ProposalContent::InstantiateContractProposal(p)) => extract_title_and_description!(p),
-            Some(ProposalContent::ReplacePoolIncentivesProposal(p)) => extract_title_and_description!(p),
-            Some(ProposalContent::SetSuperfluidAssetsProposal(p)) => extract_title_and_description!(p),
-            Some(ProposalContent::UpdateFeeTokenProposal(p)) => extract_title_and_description!(p),
-            Some(ProposalContent::MigrateContractProposal(p)) => extract_title_and_description!(p),
-            Some(ProposalContent::UpdateInstantiateConfigProposal(p)) => extract_title_and_description!(p),
-            Some(ProposalContent::SudoContractProposal(p)) => extract_title_and_description!(p),
-            Some(ProposalContent::ExecuteContractProposal(p)) => extract_title_and_description!(p),
-            Some(ProposalContent::UpdateAdminProposal(p)) => extract_title_and_description!(p),
-            Some(ProposalContent::ClearAdminProposal(p)) => extract_title_and_description!(p),
-            Some(ProposalContent::UnpinCodesProposal(p)) => extract_title_and_description!(p),
+        match &self.content() {
+            Some(ProposalContent::TextProposal(Some(p))) => {
+                (p.title.to_owned(), p.description.to_owned())
+            }
+            Some(ProposalContent::CommunityPoolSpendProposal(Some(p))) => {
+                (p.title.to_owned(), p.description.to_owned())
+            }
+            Some(ProposalContent::ParameterChangeProposal(Some(p))) => {
+                (p.title.to_owned(), p.description.to_owned())
+            }
+            Some(ProposalContent::SoftwareUpgradeProposal(Some(p))) => {
+                (p.title.to_owned(), p.description.to_owned())
+            }
+            Some(ProposalContent::ClientUpdateProposal(Some(p))) => {
+                (p.title.to_owned(), p.description.to_owned())
+            }
+            Some(ProposalContent::UpdatePoolIncentivesProposal(Some(p))) => {
+                (p.title.to_owned(), p.description.to_owned())
+            }
+            Some(ProposalContent::StoreCodeProposal(Some(p))) => {
+                (p.title.to_owned(), p.description.to_owned())
+            }
+            Some(ProposalContent::RemoveSuperfluidAssetsProposal(Some(p))) => {
+                (p.title.to_owned(), p.description.to_owned())
+            }
+            Some(ProposalContent::InstantiateContractProposal(Some(p))) => {
+                (p.title.to_owned(), p.description.to_owned())
+            }
+            Some(ProposalContent::ReplacePoolIncentivesProposal(Some(p))) => {
+                (p.title.to_owned(), p.description.to_owned())
+            }
+            Some(ProposalContent::SetSuperfluidAssetsProposal(Some(p))) => {
+                (p.title.to_owned(), p.description.to_owned())
+            }
+            Some(ProposalContent::UpdateFeeTokenProposal(Some(p))) => {
+                (p.title.to_owned(), p.description.to_owned())
+            }
+            Some(ProposalContent::MigrateContractProposal(Some(p))) => {
+                (p.title.to_owned(), p.description.to_owned())
+            }
+            Some(ProposalContent::UpdateInstantiateConfigProposal(Some(p))) => {
+                (p.title.to_owned(), p.description.to_owned())
+            }
+            Some(ProposalContent::SudoContractProposal(Some(p))) => {
+                (p.title.to_owned(), p.description.to_owned())
+            }
+            Some(ProposalContent::ExecuteContractProposal(Some(p))) => {
+                (p.title.to_owned(), p.description.to_owned())
+            }
+            Some(ProposalContent::UpdateAdminProposal(Some(p))) => {
+                (p.title.to_owned(), p.description.to_owned())
+            }
+            Some(ProposalContent::ClearAdminProposal(Some(p))) => {
+                (p.title.to_owned(), p.description.to_owned())
+            }
+            Some(ProposalContent::UnpinCodesProposal(Some(p))) => {
+                (p.title.to_owned(), p.description.to_owned())
+            }
             Some(ProposalContent::UnknownProposalType(type_url)) => (
                 "UnknownTitle".to_string(),
                 format!("UnknownDescription\n\nType URL:\n{}", type_url),
@@ -581,8 +607,7 @@ impl ProposalExt {
                 "ProposalDecodeErrorDescription".to_string(),
                 "ProposalDecodeErrorDescription".to_string(),
             ),
-        };
-        (title, description.replace("\\n", "\n"))
+        }
     }
 
     pub fn timestamp_to_string(item: Option<Timestamp>) -> String {
