@@ -13,7 +13,7 @@ use log::{debug, error, info};
 use tokio::task::{AbortHandle, JoinSet};
 
 use serde::{Deserialize, Serialize};
- 
+
 
 lazy_static! {
     static ref SUPPORTED_BLOCKCHAINS: HashMap<String, SupportedBlockchain> = {
@@ -158,6 +158,7 @@ pub async fn select_channel_from_grpc_endpoints(key_grpc_url_list: Vec<(String,V
             }
         }
     }
+    join_set.shutdown().await;
     channels
 }
 
@@ -279,4 +280,43 @@ pub async fn get_supported_blockchains_from_chain_registry(
 
     info!("Got Supported Blockchains from Chain-Registry!");
     supported_blockchains
+}
+
+#[cfg(test)]
+mod test {
+
+    // cargo test -- --nocapture
+    // cargo test -- --list
+    // cargo test api::custom::query::gov::teset::get_proposals -- --exact --nocapture
+    // cargo test api::custom::query::gov::teset::get_proposals -- --exact --nocapture
+
+    use super::*;
+
+    #[tokio::test]
+    async fn test_grpc_url_function() {
+        let grpc_url = "https://secret-mainnet-grpc.autostake.net:443".to_owned();
+        let result = test_grpc_url(grpc_url).await;
+        println!("{:?}",result);
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_select_channel_from_grpc_endpoints_function() {
+        let name = "test";
+        let grpc_url = "https://secret-mainnet-grpc.autostake.net:443".to_owned();
+
+        let result = select_channel_from_grpc_endpoints(vec![(name.to_string(),vec![grpc_url])]).await;
+        println!("{:?}",result);
+    }
+
+    #[tokio::test]
+    async fn test_get_supported_blockchains_from_chain_registrys_function() {
+        let path = "../chain-registry";
+
+        let result = get_supported_blockchains_from_chain_registry(path.to_string(),true,None).await;
+        println!("{:?}",result);
+    }
+
+
+
 }
