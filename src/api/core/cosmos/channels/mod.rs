@@ -211,7 +211,7 @@ pub async fn get_supported_blockchains_from_chain_registry(
             try_these_grpc_urls.push(hard_coded_grpc_url.to_owned());
         }
 
-        match select_channel_from_grpc_endpoints(&try_these_grpc_urls.into_iter().map(|grpc_url| format!("https://{}", grpc_url)).collect()).await {
+        match select_channel_from_grpc_endpoints(&try_these_grpc_urls.iter().map(|grpc_url| format!("https://{}", grpc_url)).collect()).await {
             Ok(grpc_url) => {
                 v.grpc_service.grpc_url = Some(grpc_url);
                 v.grpc_service.error = None;
@@ -219,7 +219,7 @@ pub async fn get_supported_blockchains_from_chain_registry(
             Err(err) => {
                 let grpc_service_error = format!("{:?}", err);
 
-                match select_channel_from_grpc_endpoints(&try_these_grpc_urls.into_iter().map(|grpc_url| format!("http://{}", grpc_url)).collect()).await {
+                match select_channel_from_grpc_endpoints(&try_these_grpc_urls.iter().map(|grpc_url| format!("http://{}", grpc_url)).collect()).await {
                     Ok(grpc_url) => {
                         v.grpc_service.grpc_url = Some(grpc_url);
                         v.grpc_service.error = None;
