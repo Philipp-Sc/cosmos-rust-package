@@ -160,25 +160,21 @@ pub async fn select_channel_from_grpc_endpoints(key_grpc_url_list: Vec<(String,V
     }
     let mut channels: Vec<(String,Result<String, anyhow::Error>)> = Vec::new();
 
-    while !join_set.is_empty() {
-        match join_set.join_next().await {
-            Some(Ok((key,result))) => {
+    while let Some(res) = set.join_next().await {
+        match res {
+            Ok((key,result)) => {
                 if result.is_ok() {
-                    for each in key_abort_handles.get(&key).unwrap(){
+                    for each in key_abort_handles.remove(&key).unwrap(){
                         each.abort();
                     }
                 }
                 channels.push((key,result));
             },
-            Some(Err(err)) => {
+            Err(err) => {
                 // task did not complete because of a unexpected error or abort
             },
-            None => {
-                break;
-            }
         }
     }
-    join_set.shutdown().await;
     channels
 }
 
