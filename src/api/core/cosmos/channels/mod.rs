@@ -132,13 +132,13 @@ pub async fn select_channel_from_grpc_endpoints(grpc_urls: &Vec<String>) -> anyh
     channel
 }
 
-fn run_cmd(cmd: impl AsRef<OsStr>, args: Option<Vec<&str>>) -> anyhow::Result<Output> {
-    let mut exit_output = Command::new(&cmd);
+fn run_cmd(cmd: &str, args: Option<Vec<&str>>) -> anyhow::Result<Output> {
+    let mut exit_output = Command::new(cmd);
     if let Some(args) = args {
         exit_output.args(args);
     }
     let exit_output = exit_output.output();
-    //println!("{:?}",exit_output);
+    debug!("run_cmd: cmd: {}, output: {:?}",cmd, exit_output);
     Ok(exit_output?)
 }
 
@@ -181,6 +181,7 @@ pub async fn get_supported_blockchains_from_chain_registry(
             update = true;
         }
         if update {
+            run_cmd("ls", Some(vec!["-a"])).ok();
             match run_cmd("git", Some(vec!["-C", path.as_str(), "pull"])) {
                 Ok(_) => {
                     info!("git pull successful for {}",&path);
