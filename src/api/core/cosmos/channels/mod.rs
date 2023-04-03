@@ -98,7 +98,10 @@ async fn check_grpc_url(grpc_url: String) -> anyhow::Result<String> {
 pub async fn select_channel_from_grpc_endpoints(grpc_urls: &Vec<String>) -> anyhow::Result<String> {
     let mut join_set: JoinSet<anyhow::Result<String>> = JoinSet::new();
     for grpc_url in grpc_urls.iter().map(|x| x.to_owned()) {
-        join_set.spawn(async move { check_grpc_url(grpc_url).await });
+        let https_grpc_url = format!("https://{}", grpc_url);
+        let http_grpc_url = format!("http://{}", grpc_url);
+        join_set.spawn(async move { check_grpc_url(http_grpc_url).await });
+        join_set.spawn(async move { check_grpc_url(https_grpc_url).await });
     }
     let mut channel: Result<String, anyhow::Error> =
         Err(anyhow::anyhow!("Error: No gRPC url passed the check!"));
@@ -205,7 +208,7 @@ pub async fn get_supported_blockchains_from_chain_registry(
             .apis
             .grpc
             .iter()
-            .map(|x| format!("https://{}", x.address))
+            .map(|x| x.address)
             .collect();
         if let Some(ref hard_coded_grpc_url) = v.grpc_service.grpc_url {
             try_these_grpc_urls.push(hard_coded_grpc_url.to_owned());
