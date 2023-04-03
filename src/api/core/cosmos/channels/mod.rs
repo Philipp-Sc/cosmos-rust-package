@@ -14,6 +14,9 @@ use tokio::task::JoinSet;
 
 use serde::{Deserialize, Serialize};
 
+use std::time::Duration;
+use tokio::time::timeout;
+
 lazy_static! {
     static ref SUPPORTED_BLOCKCHAINS: HashMap<String, SupportedBlockchain> = {
         let data = std::fs::read_to_string("./tmp/supported_blockchains.json")
@@ -61,7 +64,7 @@ impl SupportedBlockchain {
 async fn get_channel(grpc_url: String) -> anyhow::Result<Channel> {
     let endpoint =
         tonic::transport::Endpoint::new(grpc_url.parse::<tonic::transport::Uri>().unwrap())
-            .unwrap().connect_timeout(std::time::Duration::from_secs(60));
+            .unwrap()/*.connect_timeout(std::time::Duration::from_secs(60))*/;
     match endpoint.connect().await {
         Ok(result) => Ok(result),
         Err(err) => Err(anyhow::anyhow!(err)),
@@ -103,9 +106,13 @@ pub async fn select_channel_from_grpc_endpoints(grpc_urls: &Vec<String>) -> anyh
     let mut channel: Result<String, anyhow::Error> =
         Err(anyhow::anyhow!("Error: No gRPC url passed the check!"));
     let mut errors: Vec<anyhow::Error> = Vec::new();
+
+    let start_time = std::time::Instant::now();
+    let timeout_duration = Duration::from_secs(60);
+
     while !join_set.is_empty() && channel.is_err() {
-        match join_set.join_next().await {
-            Some(Ok(check)) => match check {
+        match timeout(Duration::from_millis(100), join_set.join_next()).await {
+            Ok(Some(Ok(check))) => match check {
                 Ok(passed) => {
                     channel = Ok(passed);
                 }
@@ -114,6 +121,10 @@ pub async fn select_channel_from_grpc_endpoints(grpc_urls: &Vec<String>) -> anyh
                 }
             },
             _ => {}
+        }
+        let elapsed_time = start_time.elapsed();
+        if elapsed_time > timeout_duration {
+            break;
         }
     }
     join_set.shutdown().await;
