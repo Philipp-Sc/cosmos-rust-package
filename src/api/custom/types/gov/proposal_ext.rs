@@ -421,6 +421,32 @@ impl ProposalExt {
         }
     }
 
+    pub fn proposal_preview_msg(&mut self, fraud_classification: Option<f64>) -> String {
+        let title = self.get_title();
+
+        let mut proposal_id = self.get_proposal_id();
+
+        let mut display = format!("{}\n\n{}\n#{}  -  {}\n{}",
+                                  &self.blockchain_name,
+                                  self.content_opt().map(|x| x.to_string()).unwrap_or("Proposal".to_string()),
+                                  proposal_id,
+                                  &self.status.to_icon(),
+                                  title,
+        );
+
+        if let Some(prediction) = fraud_classification {
+            let label = if prediction >= 0.70 {
+                format!("🚨 ({})\n FRAUD DETECTED",((100.0*prediction).trunc()/100.0))
+            }else if prediction > 0.40 {
+                format!("⚠ ({})\n SUSPICIOUS",((100.0*prediction).trunc()/100.0))
+            }else {
+                format!("🛡️ ({})",((100.0*prediction).trunc()/100.0))
+            };
+            display = format!("{}\n\n{}",display,label);
+        }
+        display
+    }
+
     fn timestamp_to_string(item: Option<Timestamp>) -> String {
         match item.as_ref() {
             Some(time) => {
