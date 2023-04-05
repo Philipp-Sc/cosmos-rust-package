@@ -58,7 +58,7 @@ impl fmt::Display for ParamsExt {
                 parts.push(format!("\nQuorum: {:.2}%,\nThreshold: {:.2}%,\nVeto threshold: {:.2}%", quorum * 100.0, threshold * 100.0, veto_threshold * 100.0));
             }
         }
-        write!(f, "{}", parts.join(", ").trim())
+        write!(f, "{}", parts.join(", "))
     }
 }
 
@@ -78,20 +78,20 @@ impl <'a>DurationExt<'a> {
         if days > 0 {
             format!("{}d{}h{}m{}s",
                     days,
-                    if hours > 0 { format!(" {}h", hours % 24) } else { String::new() },
-                    if minutes > 0 { format!(" {}m", minutes % 60) } else { String::new() },
-                    if seconds > 0 { format!(" {}s", seconds % 60) } else { String::new() },
+                    if hours % 24 > 0 { format!(" {}", hours % 24) } else { String::new() },
+                    if minutes % 60 > 0 { format!(" {}", minutes % 60) } else { String::new() },
+                    if seconds % 60 > 0 { format!(" {}", seconds % 60) } else { String::new() },
             )
         } else if hours > 0 {
             format!("{}h{}m{}s",
                     hours,
-                    if minutes > 0 { format!(" {}m", minutes % 60) } else { String::new() },
-                    if seconds > 0 { format!(" {}s", seconds % 60) } else { String::new() },
+                    if minutes % 60 > 0 { format!(" {}", minutes % 60) } else { String::new() },
+                    if seconds % 60 > 0 { format!(" {}", seconds % 60) } else { String::new() },
             )
         } else if minutes > 0 {
             format!("{}m{}s",
                     minutes,
-                    if seconds > 0 { format!(" {}s", seconds % 60) } else { String::new() },
+                    if seconds % 60 > 0 { format!(" {}", seconds % 60) } else { String::new() },
             )
         } else {
             format!("{}s", seconds)
