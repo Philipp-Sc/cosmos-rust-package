@@ -477,6 +477,13 @@ impl ProposalExt {
         }
         None
     }
+    pub fn total_votes(&self) -> Option<u64> {
+        let proposal = &self.proposal.0;
+        if let Some(tally) = &proposal.final_tally_result {
+            return TallyHelper(tally).total_votes();
+        }
+        None
+    }
 
     pub fn final_tally_with_no_with_veto_majority(&self) -> bool {
         let proposal = &self.proposal.0;
@@ -546,17 +553,17 @@ impl ProposalExt {
                 }
             }
             voting_state = match (voting_start, voting_end) {
-                (true, true) => format!("Voting finished"),
-                (true, false) => format!("Voting ends at {}", voting_end_text),
-                (false, false) => format!("Voting starts at {}", voting_start_text),
-                (false, true) => format!("Voting ended before it started!"),
+                (true, true) => format!("Voting finished\n\n"),
+                (true, false) => format!("Voting ends at {}\n\n", voting_end_text),
+                (false, false) => format!("Voting starts at {}\n\n", voting_start_text),
+                (false, true) => format!("Voting ended before it started!\n\n"),
             };
         } else if &self.status == &ProposalStatus::StatusDepositPeriod {
-            voting_state = format!("You can help the proposal move forward by depositing now. \nThe deposit period is open until {}",Self::timestamp_to_string(proposal.deposit_end_time.clone()))
+            voting_state = format!("You can help the proposal move forward by depositing now. \nThe deposit period is open until {}\n\n",Self::timestamp_to_string(proposal.deposit_end_time.clone()))
         }
 
         format!(
-            "{}\n\n{}\n\n{}",
+            "{} {}{}",
             &self.status.to_icon(),
             voting_state,
             tally_result,

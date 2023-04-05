@@ -29,7 +29,6 @@ impl fmt::Display for ParamsExt {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut parts = Vec::new();
         if let Some(voting_params) = &self.params.0.voting_params {
-            parts.push("\nVoting Params:".to_string());
             if let Some(voting_period) = &voting_params.voting_period {
                 if voting_period.seconds != 0i64 || voting_period.nanos != 0i32 {
                     parts.push(format!("\nVoting period: {}", DurationExt(voting_period).get_formatted_duration()));
@@ -41,7 +40,6 @@ impl fmt::Display for ParamsExt {
                 .map(|coin_ext| format!("{} {}", coin_ext.amount.parse::<u128>().unwrap_or(0u128).to_formatted_string(&Locale::en), coin_ext.denom))
                 .collect::<Vec<_>>()
                 .join(", ");
-            parts.push("\nDeposit Params:".to_string());
             if !min_deposit_str.is_empty() {
                 parts.push(format!("\nMin deposit: {}", min_deposit_str));
             }
@@ -52,7 +50,6 @@ impl fmt::Display for ParamsExt {
             }
         }
         if let Some(tally_params) = &self.params.0.tally_params {
-            parts.push("\nTally Params:".to_string());
             let tally_params_ext = TallyParamsExt(tally_params);
             let quorum = tally_params_ext.get_quorum();
             let threshold = tally_params_ext.get_threshold();
@@ -79,39 +76,50 @@ impl <'a>DurationExt<'a> {
         let days = hours / 24;
 
         if days > 0 {
-            format!("{}d {}h {}m {}s", days, hours % 24, minutes % 60, seconds % 60)
+            format!("{}d{}h{}m{}s",
+                    days,
+                    if hours > 0 { format!(" {}h", hours % 24) } else { String::new() },
+                    if minutes > 0 { format!(" {}m", minutes % 60) } else { String::new() },
+                    if seconds > 0 { format!(" {}s", seconds % 60) } else { String::new() },
+            )
         } else if hours > 0 {
-            format!("{}h {}m {}s", hours, minutes % 60, seconds % 60)
+            format!("{}h{}m{}s",
+                    hours,
+                    if minutes > 0 { format!(" {}m", minutes % 60) } else { String::new() },
+                    if seconds > 0 { format!(" {}s", seconds % 60) } else { String::new() },
+            )
         } else if minutes > 0 {
-            format!("{}m {}s", minutes, seconds % 60)
+            format!("{}m{}s",
+                    minutes,
+                    if seconds > 0 { format!(" {}s", seconds % 60) } else { String::new() },
+            )
         } else {
             format!("{}s", seconds)
         }
     }
 }
-
 pub struct TallyParamsExt<'a>(pub &'a TallyParams);
 
-impl <'a>TallyParamsExt<'a> {
+impl<'a> TallyParamsExt<'a> {
+    fn decode_dec(&self, dec_encoded: &Vec<u8>) -> f64 {
+        let decimal_string = String::from_utf8_lossy(dec_encoded).to_string();
+        let decimal_int = decimal_string.parse::<u128>().unwrap();
+        let decimal = decimal_int as f64 / 10_u128.pow(18) as f64;
+        decimal
+    }
+
     pub fn get_quorum(&self) -> f64 {
         let dec_encoded: &Vec<u8> = &self.0.quorum;
-        let decimal_string = String::from_utf8_lossy(dec_encoded).to_string();
-        let decimal_int = decimal_string.parse::<u128>().unwrap();
-        let decimal = decimal_int as f64 / 10_u128.pow(18) as f64;
-        decimal
+        self.decode_dec(dec_encoded)
     }
+
     pub fn get_threshold(&self) -> f64 {
         let dec_encoded: &Vec<u8> = &self.0.threshold;
-        let decimal_string = String::from_utf8_lossy(dec_encoded).to_string();
-        let decimal_int = decimal_string.parse::<u128>().unwrap();
-        let decimal = decimal_int as f64 / 10_u128.pow(18) as f64;
-        decimal
+        self.decode_dec(dec_encoded)
     }
+
     pub fn get_veto_threshold(&self) -> f64 {
         let dec_encoded: &Vec<u8> = &self.0.veto_threshold;
-        let decimal_string = String::from_utf8_lossy(dec_encoded).to_string();
-        let decimal_int = decimal_string.parse::<u128>().unwrap();
-        let decimal = decimal_int as f64 / 10_u128.pow(18) as f64;
-        decimal
+        self.decode_dec(dec_encoded)
     }
 }
