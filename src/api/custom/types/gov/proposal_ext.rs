@@ -8,6 +8,7 @@ use std::fmt;
 use std::hash::{Hash, Hasher};
 
 use std::string::ToString;
+use bitcoin::bech32::ToBase32;
 use strum_macros;
 use strum_macros::EnumIter;
 
@@ -559,6 +560,6 @@ impl ProposalExt {
             &self.status.to_icon(),
             voting_state,
             tally_result,
-        )
+        ).trim().to_string()
     }
 }

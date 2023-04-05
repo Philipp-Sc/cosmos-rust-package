@@ -29,9 +29,10 @@ impl fmt::Display for ParamsExt {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut parts = Vec::new();
         if let Some(voting_params) = &self.params.0.voting_params {
+            parts.push("\nVoting Params:".to_string());
             if let Some(voting_period) = &voting_params.voting_period {
                 if voting_period.seconds != 0i64 || voting_period.nanos != 0i32 {
-                    parts.push(format!("Voting period: {}", DurationExt(voting_period).get_formatted_duration()));
+                    parts.push(format!("\nVoting period: {}", DurationExt(voting_period).get_formatted_duration()));
                 }
             }
         }
@@ -40,6 +41,7 @@ impl fmt::Display for ParamsExt {
                 .map(|coin_ext| format!("{} {}", coin_ext.amount.parse::<u128>().unwrap_or(0u128).to_formatted_string(&Locale::en), coin_ext.denom))
                 .collect::<Vec<_>>()
                 .join(", ");
+            parts.push("\nDeposit Params:".to_string());
             if !min_deposit_str.is_empty() {
                 parts.push(format!("\nMin deposit: {}", min_deposit_str));
             }
@@ -50,6 +52,7 @@ impl fmt::Display for ParamsExt {
             }
         }
         if let Some(tally_params) = &self.params.0.tally_params {
+            parts.push("\nTally Params:".to_string());
             let tally_params_ext = TallyParamsExt(tally_params);
             let quorum = tally_params_ext.get_quorum();
             let threshold = tally_params_ext.get_threshold();
@@ -58,7 +61,7 @@ impl fmt::Display for ParamsExt {
                 parts.push(format!("\nQuorum: {:.2}%,\nThreshold: {:.2}%,\nVeto threshold: {:.2}%", quorum * 100.0, threshold * 100.0, veto_threshold * 100.0));
             }
         }
-        write!(f, "{}", parts.join(", "))
+        write!(f, "{}", parts.join(", ").trim())
     }
 }
 

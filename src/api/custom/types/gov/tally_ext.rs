@@ -47,14 +47,14 @@ pub struct TallyHelper<'a>(pub &'a TallyResult);
 impl <'a>TallyHelper<'a> {
     pub fn final_tally_to_string(&self) -> String {
         if let Some(tally) = self.tally_to_string() {
-            format!("🗳 Final tally result 🗳\n{}",tally)
+            format!("🗳 Final tally result:\n{}",tally)
         }else{
             "".to_string()
         }
     }
     pub fn current_tally_to_string(&self) -> String {
         if let Some(tally) = self.tally_to_string() {
-            format!("🗳 Current voting results 🗳\n{}",tally)
+            format!("🗳 Current voting results:\n{}",tally)
         }else{
             "".to_string()
         }
