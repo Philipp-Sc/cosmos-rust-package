@@ -27,6 +27,7 @@ lazy_static! {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Hash)]
 pub struct SupportedBlockchain {
+    pub rank: u32,
     pub display: String,
     pub name: String,
     pub prefix: String,
