@@ -477,7 +477,7 @@ impl ProposalExt {
         }
         None
     }
-    pub fn total_votes(&self) -> Option<u64> {
+    pub fn total_votes(&self) -> Option<f64> {
         let proposal = &self.proposal.0;
         if let Some(tally) = &proposal.final_tally_result {
             return TallyHelper(tally).total_votes();

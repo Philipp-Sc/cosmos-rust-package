@@ -28,7 +28,7 @@ impl TallyResultExt {
             None
         }
     }
-    pub fn total_votes(&self) -> Option<u64> {
+    pub fn total_votes(&self) -> Option<f64> {
         if let Some(tally) = &self.tally_result.0.tally {
             TallyHelper(tally).total_votes()
         }else {
@@ -111,14 +111,14 @@ impl <'a>TallyHelper<'a> {
         }
     }
 
-    pub fn total_votes(&self) -> Option<u64> {
+    pub fn total_votes(&self) -> Option<f64> {
         let tally = self.0;
         if tally.yes != "0" || tally.abstain != "0" || tally.no != "0" || tally.no_with_veto != "0"
         {
-            let abstain_num = tally.abstain.parse::<u64>().unwrap();
-            let yes_num = tally.yes.parse::<u64>().unwrap();
-            let no_num = tally.no.parse::<u64>().unwrap();
-            let no_with_veto_num = tally.no_with_veto.parse::<u64>().unwrap();
+            let abstain_num = tally.abstain.parse::<f64>().unwrap();
+            let yes_num = tally.yes.parse::<f64>().unwrap();
+            let no_num = tally.no.parse::<f64>().unwrap();
+            let no_with_veto_num = tally.no_with_veto.parse::<f64>().unwrap();
             let total = abstain_num + yes_num + no_num + no_with_veto_num;
             Some(total)
         } else {
