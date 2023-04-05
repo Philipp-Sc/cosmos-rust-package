@@ -127,7 +127,7 @@ pub enum ProposalContent {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Hash)]
 pub struct ProposalExt {
-    pub blockchain_name: String,
+    pub blockchain: SupportedBlockchain,
     pub status: ProposalStatus,
     pub proposal: ProtoMessageWrapper<cosmos_sdk_proto::cosmos::gov::v1beta1::Proposal>,
 }
@@ -139,7 +139,7 @@ impl ProposalExt {
         proposal: cosmos_sdk_proto::cosmos::gov::v1beta1::Proposal,
     ) -> Self {
         Self {
-            blockchain_name: blockchain.name.to_string(),
+            blockchain: blockchain.clone(),
             status: proposal_status.clone(),
             proposal: ProtoMessageWrapper(proposal),
         }
@@ -254,29 +254,25 @@ impl ProposalExt {
             }
     }
 
-
-    pub fn time(&self, time: &ProposalTime) -> Option<Timestamp> {
-        let proposal = &self.proposal.0;
-        match time {
-            &ProposalTime::SubmitTime => proposal.submit_time.clone(),
-            &ProposalTime::DepositEndTime => proposal.deposit_end_time.clone(),
-            &ProposalTime::VotingEndTime => proposal.voting_end_time.clone(),
-            &ProposalTime::VotingStartTime => proposal.voting_start_time.clone(),
-            &ProposalTime::LatestTime => self.latest_time(proposal),
-        }
+    pub fn is_in_deposit_period(
+        &self
+    ) -> bool {
+        self.status == ProposalStatus::StatusDepositPeriod
     }
-    pub fn latest_time(
-        &self,
-        proposal: &cosmos_sdk_proto::cosmos::gov::v1beta1::Proposal,
-    ) -> Option<Timestamp> {
+
+    pub fn get_timestamp_based_on_proposal_status(
+        &self
+    ) -> &Option<Timestamp> {
         match self.status {
             ProposalStatus::StatusNil | ProposalStatus::StatusDepositPeriod => {
-                proposal.submit_time.clone()
-            }
-            ProposalStatus::StatusVotingPeriod => proposal.voting_start_time.clone(),
-            ProposalStatus::StatusPassed
-            | ProposalStatus::StatusFailed
-            | ProposalStatus::StatusRejected => proposal.voting_end_time.clone(),
+                &self.proposal.0.submit_time
+            },
+            ProposalStatus::StatusVotingPeriod => {
+                &self.proposal.0.voting_start_time
+            },
+            ProposalStatus::StatusPassed | ProposalStatus::StatusFailed  | ProposalStatus::StatusRejected => {
+                &self.proposal.0.voting_end_time
+            },
         }
     }
 
@@ -340,15 +336,15 @@ impl ProposalExt {
                 p.description.to_owned()
             }
             Some(ProposalContent::UnknownProposalType(type_url)) =>
-                format!("UnknownDescription\n\nType URL:\n{}", type_url)
+                format!("Error: UnknownProposalTypeError: ProposalContent can not be decoded for unknown ProposalType.\n\nType URL:\n{}", type_url)
             ,
-            Some(_) =>
-                "ContentDecodeErrorDescription".to_string()
+            Some(proposal_content) =>
+                format!("Error: ProposalContentDecodeError: Failed to decode ProposalContent: {}",proposal_content)
             ,
             None =>
-                "ProposalDecodeErrorDescription".to_string()
+                "Error: ProposalDecodeError: Failed to decode Proposal.".to_string()
             ,
-        }
+        }.replace("\\n","\n")
     }
     pub fn get_title(&self) -> String {
         match &self.content_opt() {
@@ -410,24 +406,24 @@ impl ProposalExt {
                 p.title.to_owned()
             }
             Some(ProposalContent::UnknownProposalType(type_url)) =>
-                "UnknownTitle".to_string()
+                "UnknownProposalTypeError".to_string()
             ,
             Some(_) =>
-                "ContentDecodeErrorTitle".to_string()
+                "ProposalContentDecodeError".to_string()
             ,
             None =>
-                "ProposalDecodeErrorTitle".to_string()
+                "ProposalDecodeError".to_string()
             ,
         }
     }
 
-    pub fn proposal_preview_msg(&mut self, fraud_classification: Option<f64>) -> String {
+    pub fn proposal_preview_msg(&self, fraud_classification: Option<f64>) -> String {
         let title = self.get_title();
 
         let mut proposal_id = self.get_proposal_id();
 
         let mut display = format!("{}\n\n{}\n#{}  -  {}\n{}",
-                                  &self.blockchain_name,
+                                  &self.blockchain.display,
                                   self.content_opt().map(|x| x.to_string()).unwrap_or("Proposal".to_string()),
                                   proposal_id,
                                   &self.status.to_icon(),
@@ -505,19 +501,8 @@ impl ProposalExt {
     }
 
     pub fn governance_proposal_link(&self) -> String {
-        let mut proposal_id = self.get_proposal_id().to_string();
-
-        let blockchain_name = self.blockchain_name.to_lowercase();
-
-        match get_supported_blockchains()
-            .get(&blockchain_name){
-            Some(supported_blockchain) => {
-                format!("{}{}",supported_blockchain.governance_proposals_link,proposal_id)
-            },
-            None => {
-                format!("https://www.mintscan.io/{}/proposals/{}",blockchain_name,proposal_id)
-            }
-        }
+        // format!("https://www.mintscan.io/{}/proposals/{}",blockchain_name,proposal_id)
+        format!("{}{}",self.blockchain.governance_proposals_link,self.get_proposal_id())
     }
 
     pub fn proposal_state(&self) -> String {

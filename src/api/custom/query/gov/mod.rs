@@ -46,7 +46,7 @@ pub async fn get_params(
     params_type: String) -> anyhow::Result<ParamsExt> {
     let channel = blockchain.channel().await?;
     let res = cosmos::query::gov::get_params(channel, cosmos_sdk_proto::cosmos::gov::v1beta1::QueryParamsRequest{ params_type: params_type.clone() } ).await?;
-    Ok(ParamsExt::new(&blockchain.name, &params_type, res))
+    Ok(ParamsExt::new(blockchain, &params_type, res))
 }
 
 pub async fn get_tally(
@@ -54,7 +54,7 @@ pub async fn get_tally(
     proposal_id: u64) -> anyhow::Result<TallyResultExt> {
     let channel = blockchain.channel().await?;
     let res = cosmos::query::gov::get_tally_result(channel, cosmos_sdk_proto::cosmos::gov::v1beta1::QueryTallyResultRequest{ proposal_id } ).await?;
-    Ok(TallyResultExt::new(&blockchain.name,proposal_id,res))
+    Ok(TallyResultExt::new(blockchain,proposal_id,res))
 }
 
 pub async fn get_proposals(

@@ -5,18 +5,20 @@ use serde::{Deserialize, Serialize};
 
 use cosmos_sdk_proto::cosmos::gov::v1beta1::{QueryParamsResponse, TallyParams};
 use crate::api::custom::types::ProtoMessageWrapper;
+use num_format::{Locale, ToFormattedString};
+use crate::api::core::cosmos::channels::SupportedBlockchain;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Hash)]
 pub struct ParamsExt {
-    pub blockchain_name: String,
+    pub blockchain: SupportedBlockchain,
     pub params_type: String,
     pub params: ProtoMessageWrapper<QueryParamsResponse>,
 }
 
 impl ParamsExt {
-    pub fn new(blockchain_name: &str, params_type: &str, params: QueryParamsResponse) -> Self {
+    pub fn new(blockchain: SupportedBlockchain, params_type: &str, params: QueryParamsResponse) -> Self {
         Self {
-            blockchain_name: blockchain_name.to_string(),
+            blockchain,
             params_type: params_type.to_string(),
             params: ProtoMessageWrapper(params),
         }
@@ -35,15 +37,15 @@ impl fmt::Display for ParamsExt {
         }
         if let Some(deposit_params) = &self.params.0.deposit_params {
             let min_deposit_str = deposit_params.min_deposit.iter()
-                .map(|coin_ext| format!("{} {}", coin_ext.amount, coin_ext.denom))
+                .map(|coin_ext| format!("{} {}", coin_ext.amount.parse::<u128>().unwrap_or(0u128).to_formatted_string(&Locale::en), coin_ext.denom))
                 .collect::<Vec<_>>()
                 .join(", ");
             if !min_deposit_str.is_empty() {
-                parts.push(format!("Min deposit: {}", min_deposit_str));
+                parts.push(format!("\nMin deposit: {}", min_deposit_str));
             }
             if let Some(max_deposit_period) = &deposit_params.max_deposit_period {
                 if max_deposit_period.seconds != 0i64 || max_deposit_period.nanos != 0i32 {
-                    parts.push(format!("Max deposit period: {}", DurationExt(max_deposit_period).get_formatted_duration()));
+                    parts.push(format!("\nMax deposit period: {}", DurationExt(max_deposit_period).get_formatted_duration()));
                 }
             }
         }
@@ -53,7 +55,7 @@ impl fmt::Display for ParamsExt {
             let threshold = tally_params_ext.get_threshold();
             let veto_threshold = tally_params_ext.get_veto_threshold();
             if quorum != 0f64 || threshold != 0f64 || veto_threshold != 0f64 {
-                parts.push(format!("Quorum: {:.2}%, Threshold: {:.2}%, Veto threshold: {:.2}%", quorum * 100.0, threshold * 100.0, veto_threshold * 100.0));
+                parts.push(format!("\nQuorum: {:.2}%,\nThreshold: {:.2}%,\nVeto threshold: {:.2}%", quorum * 100.0, threshold * 100.0, veto_threshold * 100.0));
             }
         }
         write!(f, "{}", parts.join(", "))

@@ -5,7 +5,7 @@ pub async fn get_pool(
     blockchain: SupportedBlockchain) -> anyhow::Result<PoolExt> {
     let channel = blockchain.channel().await?;
     let res = super::super::super::core::cosmos::query::staking::get_pool(channel).await?;
-    Ok(PoolExt::new(&blockchain.name,res))
+    Ok(PoolExt::new(blockchain,res))
 }
 
 #[cfg(test)]

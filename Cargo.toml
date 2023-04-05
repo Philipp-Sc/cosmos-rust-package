@@ -34,6 +34,7 @@ thiserror = { version = "1.0.21" }
 eyre = "0.6"
 lazy_static = { workspace = true}
 linkify = { workspace = true}
+num-format = "0.4.4"
 
 [features]
 default = ["cosmos","osmosis"]

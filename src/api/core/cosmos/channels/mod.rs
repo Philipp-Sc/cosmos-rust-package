@@ -25,7 +25,7 @@ lazy_static! {
     };
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Hash)]
 pub struct SupportedBlockchain {
     pub display: String,
     pub name: String,
@@ -34,7 +34,7 @@ pub struct SupportedBlockchain {
     pub governance_proposals_link: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Hash)]
 pub struct GRPC_Service {
     pub grpc_url: Option<String>, // selected grpc_url
     pub error: Option<String>,    // error msg if no url could be selected
