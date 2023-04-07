@@ -520,7 +520,12 @@ impl ProposalExt {
             Some(TallyHelper(tally).tally_details())
         }else{
             None
-        } 
+        }
+    }
+
+    pub fn proposal_submitted(&self) -> String {
+        let proposal = &self.proposal.0;
+        Self::timestamp_to_string(proposal.submit_time.clone())
     }
 
 
