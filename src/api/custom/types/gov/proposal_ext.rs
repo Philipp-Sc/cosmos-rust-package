@@ -513,6 +513,17 @@ impl ProposalExt {
         format!("{}{}",self.blockchain.governance_proposals_link,self.get_proposal_id())
     }
 
+
+    pub fn tally_details(&self) -> Option<String> {
+        let proposal = &self.proposal.0;
+        if let Some(tally) = &proposal.final_tally_result {
+            Some(TallyHelper(tally).tally_details())
+        }else{
+            None
+        } 
+    }
+
+
     pub fn proposal_state(&self) -> String {
         let proposal = &self.proposal.0;
         let (voting_start_text, voting_end_text) = self.get_voting_start_and_end();
