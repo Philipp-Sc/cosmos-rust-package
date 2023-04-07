@@ -90,8 +90,7 @@ impl <'a>TallyHelper<'a> {
         let no_num = tally.no.parse::<u128>().unwrap();
         let no_with_veto_num = tally.no_with_veto.parse::<u128>().unwrap();
         let total = abstain_num + yes_num + no_num + no_with_veto_num;
-        format!(
-            r#"\nYes: {},\nNo: {},\nAbstain: {},\nNoWithVeto: {},\n\nTotal: {}"#,
+        format!("\nYes Votes: \n{}\n,\nNo Votes: \n{}\n,\nAbstain Votes: \n{}\n,\nNoWithVeto Votes: \n{}\n,\n\nTotal Votes: \n{}\n",
             yes_num.to_formatted_string(&Locale::en),
             no_num.to_formatted_string(&Locale::en),
             abstain_num.to_formatted_string(&Locale::en),

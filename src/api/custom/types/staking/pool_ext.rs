@@ -42,10 +42,10 @@ impl PoolExt {
         let not_bonded_tokens = self.pool.0.pool.as_ref().map(|x| x.not_bonded_tokens.parse::<u128>().ok()).flatten();
 
         if let Some(bonded) = bonded_tokens {
-            output.push_str(&format!("\nBonded tokens: {}",bonded.to_formatted_string(&Locale::en)));
+            output.push_str(&format!("\nBonded tokens: \n{}\n",bonded.to_formatted_string(&Locale::en)));
         }
         if let Some(not_bonded) = not_bonded_tokens {
-            output.push_str(&format!("\nNot bonded tokens: {}",not_bonded.to_formatted_string(&Locale::en)));
+            output.push_str(&format!("\nNot bonded tokens: \n{}\n",not_bonded.to_formatted_string(&Locale::en)));
         }
         if output.is_empty() {
             None
