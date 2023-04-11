@@ -104,12 +104,21 @@ async fn test_grpc_url(grpc_url: String) -> anyhow::Result<String> {
 }
 
 async fn check_grpc_url(grpc_url: String) -> anyhow::Result<String> {
-    match test_grpc_url(format!("{}{}", "https://",&grpc_url)).await {
+    let http = "http://";
+    let https = "https://";
+
+    let test_url = if grpc_url.contains(http) || grpc_url.contains(https){
+        grpc_url.to_owned()
+    }else{
+        format!("{}{}", https, &grpc_url)
+    };
+
+    match test_grpc_url(test_url).await {
         Ok(https_grpc_url) => {
             Ok(https_grpc_url)
         },
         Err(err) => {
-            match test_grpc_url(format!("{}{}", "http://",&grpc_url)).await {
+            match test_grpc_url(format!("{}{}", http,&grpc_url)).await {
                 Ok(http_grpc_url) => {
                     Ok(http_grpc_url)
                 },
