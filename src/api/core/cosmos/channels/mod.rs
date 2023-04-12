@@ -6,6 +6,7 @@ use lazy_static::lazy_static;
 use std::ffi::OsStr;
 use std::fmt::Debug;
 use std::fs::File;
+use std::hash::{Hash, Hasher};
 use std::io::BufReader;
 use std::process::Command;
 use std::process::Output;
@@ -26,7 +27,7 @@ lazy_static! {
     };
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Hash)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct SupportedBlockchain {
     pub rank: u32,
     pub display: String,
@@ -34,6 +35,13 @@ pub struct SupportedBlockchain {
     pub prefix: String,
     pub grpc_service: GRPC_Service,
     pub governance_proposals_link: String,
+}
+
+impl Hash for SupportedBlockchain
+{
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.name.hash(state);
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Hash)]

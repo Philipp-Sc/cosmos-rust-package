@@ -146,14 +146,6 @@ impl ProposalExt {
         }
     }
 
-    pub fn get_imperative_proposal_id(&self) -> u64 {
-        let mut s = DefaultHasher::new();
-        &self.blockchain.hash(&mut s);
-        &self.status.hash(&mut s);
-        &self.get_proposal_id().hash(&mut s);
-        s.finish()
-    }
-
     pub fn object_to_hash(&self) -> u64 {
         let mut s = DefaultHasher::new();
         &self.hash(&mut s);
