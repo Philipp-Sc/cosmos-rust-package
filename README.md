@@ -11,7 +11,7 @@ Package used by https://t.me/cosmos_governance_briefings_bot.
 - load blockchains defined in `tmp/supported_blockchains.json` via [chain-registry](https://github.com/cosmos/chain-registry) repository and test connection.
 - get channel to gRPC node for supported blockchain. 
 
-#### api/core/cosmos/keys/
+#### api/core/cosmos/keys/mod.rs 
 - `key management` from [cosm-rust-script](https://github.com/CyberHoward/cosm-rust-script)
 
 #### api/core/cosmos/query/mod.rs 
