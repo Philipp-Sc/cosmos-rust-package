@@ -16,31 +16,26 @@ Package used by https://t.me/cosmos_governance_briefings_bot.
 
 #### api/core/cosmos/query/mod.rs 
 - `cosmos query interface, returns a proto type`    
-- Includes:
-  - `query/auth`
-  - `query/gov`
-  - `query/staking`
-  - (feel free to add a PR or open an Issue for queries you need that are not yet added here)
 
 #### api/core/osmosis/query/mod.rs 
 - `osmosis query interface, returns a proto type`
 
 #### api/custom/query/mod.rs 
 - `custom query interface, extended to return a custom type, easier to work with`
-- Includes: 
-  - `query/gov`
-  - `query/staking`
-  - (feel free to add a PR or open an Issue for queries you need that are not yet added here)
-
 
 #### api/custom/types/mod.rs 
 - `custom query interface, custom return types, easier to work with`
 - `adds serialize/deserialize`
 - `adds useful helper methods to work with the inner proto type`
-- Includes: 
+
+### Implemented Modules
+
+- Include:
+  - `query/auth`
   - `query/gov`
   - `query/staking`
   - (feel free to add a PR or open an Issue for queries you need that are not yet added here)
+
 
 ## Similar Projects
 
