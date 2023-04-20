@@ -6,15 +6,15 @@ Package used by https://t.me/cosmos_governance_briefings_bot.
 
 ## Developer notes
 
-#### cosmos-rust-package/src/api/core/cosmos/channels/mod.rs 
+#### api/core/cosmos/channels/mod.rs 
 
 - load blockchains defined in `tmp/supported_blockchains.json` via [chain-registry](https://github.com/cosmos/chain-registry) repository and test connection.
 - get channel to gRPC node for supported blockchain. 
 
-#### cosmos-rust-package/src/api/core/cosmos/keys/
+#### api/core/cosmos/keys/
 - `key management` from [cosm-rust-script](https://github.com/CyberHoward/cosm-rust-script)
 
-#### cosmos-rust-package/src/api/core/cosmos/query/mod.rs 
+#### api/core/cosmos/query/mod.rs 
 - `cosmos query interface, returns a proto type`    
 - Includes:
   - `query/auth`
@@ -22,10 +22,10 @@ Package used by https://t.me/cosmos_governance_briefings_bot.
   - `query/staking`
   - (feel free to add a PR or open an Issue for queries you need that are not yet added here)
 
-#### cosmos-rust-package/src/api/core/osmosis/query/mod.rs 
+#### api/core/osmosis/query/mod.rs 
 - `osmosis query interface, returns a proto type`
 
-#### cosmos-rust-package/src/api/custom/query/mod.rs 
+#### api/custom/query/mod.rs 
 - `custom query interface, extended to return a custom type, easier to work with`
 - Includes: 
   - `query/gov`
@@ -33,7 +33,7 @@ Package used by https://t.me/cosmos_governance_briefings_bot.
   - (feel free to add a PR or open an Issue for queries you need that are not yet added here)
 
 
-#### cosmos-rust-package/src/api/custom/types/mod.rs 
+#### api/custom/types/mod.rs 
 - `custom query interface, custom return types, easier to work with`
 - `adds serialize/deserialize`
 - `adds useful helper methods to work with the inner proto type`
