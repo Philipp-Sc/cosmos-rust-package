@@ -432,16 +432,43 @@ impl ProposalExt {
         );
 
         if let Some(prediction) = fraud_classification {
-            let label = if prediction >= 0.70 {
-                format!("🚨 ({})\n FRAUD DETECTED",((100.0*prediction).trunc()/100.0))
-            }else if prediction > 0.40 {
-                format!("⚠ ({})\n SUSPICIOUS",((100.0*prediction).trunc()/100.0))
-            }else {
-                format!("🛡️ ({})",((100.0*prediction).trunc()/100.0))
+            let label = if prediction >= 0.7 {
+                format!("🚨 {}",map_prediction_to_string(prediction))
+            }else if prediction >= 0.35 {
+                format!("⚠ {}",map_prediction_to_string(prediction))
+            }else if prediction >= 0.30 {
+                format!("❗ {}",map_prediction_to_string(prediction))
+            }else if prediction > 0.25 {
+                format!("⁉️️ {}",map_prediction_to_string(prediction))
+            }else{
+                format!("🛡️ {}",map_prediction_to_string(prediction))
             };
             display = format!("{}\n\n{}",display,label);
         }
         display
+    }
+
+
+    fn map_prediction_to_string(number: f64) -> String {
+        let mut result = String::new();
+
+        let filled_blocks = (number * 10.0).round() as usize;
+        for i in 0..filled_blocks {
+            result.push('●');
+            if i==3 {
+                result.push('|');
+            }
+        }
+
+        let empty_blocks = 10 - filled_blocks;
+        for i in 0..empty_blocks {
+            result.push('○');
+            if i+filled_blocks==3 {
+                result.push('|');
+            }
+        }
+
+        result
     }
 
     fn timestamp_to_string(item: Option<Timestamp>) -> String {
