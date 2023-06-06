@@ -433,15 +433,15 @@ impl ProposalExt {
 
         if let Some(prediction) = fraud_classification {
             let label = if prediction >= 0.7 {
-                format!("🚨 {}",map_prediction_to_string(prediction))
+                format!("🚨 {}",Self::map_prediction_to_string(prediction))
             }else if prediction >= 0.35 {
-                format!("⚠ {}",map_prediction_to_string(prediction))
+                format!("⚠ {}",Self::map_prediction_to_string(prediction))
             }else if prediction >= 0.30 {
-                format!("❗ {}",map_prediction_to_string(prediction))
+                format!("❗ {}",Self::map_prediction_to_string(prediction))
             }else if prediction > 0.25 {
-                format!("⁉️️ {}",map_prediction_to_string(prediction))
+                format!("⁉️️ {}",Self::map_prediction_to_string(prediction))
             }else{
-                format!("🛡️ {}",map_prediction_to_string(prediction))
+                format!("🛡️ {}",Self::map_prediction_to_string(prediction))
             };
             display = format!("{}\n\n{}",display,label);
         }
