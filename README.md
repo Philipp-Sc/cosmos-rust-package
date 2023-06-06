@@ -1,27 +1,40 @@
 # cosmos-rust-package
-Package used by the cosmos-rust-interface. Makes direct use of cosmos-rust (cosmos‑sdk‑proto, osmosis-proto, cosmrs). 
+
+- An API to query and broadcast transactions via gRPC
+- Makes direct use of [cosmos-rust](https://github.com/cosmos/cosmos-rust) (cosmos‑sdk‑proto, cosmrs) and [osmosis-rust](https://github.com/osmosis-labs/osmosis-rust) (osmosis-std)
+- Developed for Cosmos Governance Notifications: https://t.me/cosmos_governance_briefings_bot      
+
+
 
 ## Developer notes
 
-- cosmos-rust-package/src/api/core/cosmos/channels/mod.rs 
-`supported blockchains with channels to gRPC nodes`
+#### api/core/cosmos/channels/mod.rs 
 
-- cosmos-rust-package/src/api/core/cosmos/keys/
-`key management` from [cosm-rust-script](https://github.com/CyberHoward/cosm-rust-script)
+- `load blockchains defined in 'tmp/supported_blockchains.json' via the chain-registry repository and test connection`
+- `get channel to gRPC node for supported blockchain`
 
-- cosmos-rust-package/src/api/core/cosmos/query/mod.rs 
-`cosmos query interface, returns a proto type`
+#### api/core/cosmos/keys/mod.rs 
+- `key management` from [cosm-rust-script](https://github.com/CyberHoward/cosm-rust-script)
 
-- cosmos-rust-package/src/api/core/osmosis/query/mod.rs 
-`osmosis query interface, returns a proto type`
+#### api/core/cosmos/query/mod.rs 
+- `cosmos query interface, returns a proto type`    
 
-- cosmos-rust-package/src/api/custom/mod.rs 
-`custom query interface, extended functionality with custom return type, easier to work with`
+#### api/core/osmosis/query/mod.rs 
+- `osmosis query interface, returns a proto type`
 
-### Goals
+#### api/custom/query/mod.rs 
+- `custom queries, extended to return custom types`
 
-1. Simple API to query and broadcast transactions via gRPC 
+#### api/custom/types/mod.rs 
+- `custom types, easier to work with`
+- `adds serialize/deserialize`
+- `adds useful helper methods to work with the inner proto type`
 
+### Implemented Modules    
+- `query/auth`
+- `query/gov`
+- `query/staking`
+- `(feel free to add a PR or open an Issue for queries you need that are not yet added here)`
 
 
 ## Similar Projects
