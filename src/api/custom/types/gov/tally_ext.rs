@@ -135,7 +135,7 @@ impl <'a>TallyHelper<'a> {
             let no_num = no_num / total;
             let no_with_veto_num = no_with_veto_num / total;
             Some(
-                (1.0 + ((2.0 * no_with_veto_num) + no_num - yes_num - (0.5 * abstain_num)) / total) / 3
+                (1.0 + ((2.0 * no_with_veto_num) + no_num - yes_num - (0.5 * abstain_num)) / total) / 3.0
             )
         } else {
             None
