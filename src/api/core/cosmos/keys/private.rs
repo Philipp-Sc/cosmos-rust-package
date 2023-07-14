@@ -1,4 +1,4 @@
-use bitcoin::util::bip32::{ExtendedPrivKey, IntoDerivationPath};
+use bitcoin::bip32::{ExtendedPrivKey, IntoDerivationPath};
 use bitcoin::Network;
 //use crypto::sha2::Sha256;
 use secp256k1::Secp256k1;
@@ -88,12 +88,12 @@ impl PrivateKey {
         &self,
         secp: &Secp256k1<C>,
     ) -> PublicKey {
-        let x = &self.private_key.private_key.public_key(secp);
-        PublicKey::from_bitcoin_public_key(x)
+        let x = bitcoin::key::PublicKey::new(self.private_key.private_key.public_key(secp));
+        PublicKey::from_bitcoin_public_key(&x)
     }
 
     pub fn raw_key(&self) -> Vec<u8> {
-        self.private_key.private_key.to_bytes()
+        self.private_key.private_key.secret_bytes().into()
     }
 
     fn gen_private_key_phrase<C: secp256k1::Signing + secp256k1::Context>(

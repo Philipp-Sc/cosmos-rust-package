@@ -85,7 +85,7 @@ pub fn private_key_from_seed_phrase(
     let s = Secp256k1::new();
     let pk = keys::private::PrivateKey::from_words(&s, seed_phrase.as_str(), 0, 0, coin_type)?;
     let cosmos_private_key =
-        cosmrs::crypto::secp256k1::SigningKey::from_bytes(&pk.raw_key()).unwrap();
+        cosmrs::crypto::secp256k1::SigningKey::from_slice(&pk.raw_key()[..]).unwrap();
     Ok(cosmos_private_key)
 }
 

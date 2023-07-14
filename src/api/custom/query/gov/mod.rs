@@ -27,6 +27,7 @@ use cosmos_sdk_proto::prost::Message;
 use crate::api::custom::types::gov::params_ext::ParamsExt;
 use crate::api::custom::types::gov::proposal_ext::{ProposalExt, ProposalStatus};
 use crate::api::custom::types::gov::tally_ext::TallyResultExt;
+use crate::api::custom::types::staking::validators_ext::ValidatorsExt;
 
 lazy_static! {
     pub static ref LINK_FINDER: LinkFinder = get_link_finder();
@@ -40,6 +41,27 @@ pub fn get_link_finder() -> LinkFinder {
     finder
 }
 
+
+pub async fn get_validators(
+    blockchain: SupportedBlockchain,
+    next_key: Option<Vec<u8>>
+) -> anyhow::Result<ValidatorsExt> {
+    let channel = blockchain.channel().await?;
+    let res = cosmos::query::staking::get_validators(
+        channel,
+        cosmos_sdk_proto::cosmos::staking::v1beta1::QueryValidatorsRequest {
+            status: "".to_string(),
+            pagination: Some(PageRequest {
+                key: next_key.unwrap_or(vec![]),
+                offset: 0,
+                limit: 0,
+                count_total: false,
+                reverse: false,
+            })
+        }
+    ).await?;
+    Ok(ValidatorsExt::new(blockchain, res))
+}
 
 pub async fn get_params(
     blockchain: SupportedBlockchain,
