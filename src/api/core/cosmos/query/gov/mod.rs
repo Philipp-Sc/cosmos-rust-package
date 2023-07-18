@@ -1,8 +1,10 @@
-
 use tonic::transport::Channel;
 
 use cosmos_sdk_proto::cosmos::gov::v1beta1::query_client::QueryClient;
-use cosmos_sdk_proto::cosmos::gov::v1beta1::{QueryProposalsRequest, QueryProposalsResponse, QueryTallyResultRequest, QueryParamsResponse,QueryParamsRequest,  QueryTallyResultResponse};
+use cosmos_sdk_proto::cosmos::gov::v1beta1::{
+    QueryParamsRequest, QueryParamsResponse, QueryProposalsRequest, QueryProposalsResponse,
+    QueryTallyResultRequest, QueryTallyResultResponse,
+};
 
 pub async fn get_params(
     channel: Channel,
@@ -36,8 +38,6 @@ pub async fn get_proposals(
         .into_inner();
     Ok(res)
 }
-
-
 
 /*
 #[cfg(test)]

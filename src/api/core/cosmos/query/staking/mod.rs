@@ -1,13 +1,12 @@
-
 use tonic::transport::Channel;
 
-use cosmos_sdk_proto::cosmos::staking::v1beta1::{QueryPoolRequest, QueryValidatorsRequest, QueryValidatorsResponse};
-use cosmos_sdk_proto::cosmos::staking::v1beta1::QueryPoolResponse;
 use cosmos_sdk_proto::cosmos::staking::v1beta1::query_client::QueryClient as StakingQueryClient;
+use cosmos_sdk_proto::cosmos::staking::v1beta1::QueryPoolResponse;
+use cosmos_sdk_proto::cosmos::staking::v1beta1::{
+    QueryPoolRequest, QueryValidatorsRequest, QueryValidatorsResponse,
+};
 
-pub async fn get_pool(
-    channel: Channel
-) -> anyhow::Result<QueryPoolResponse> {
+pub async fn get_pool(channel: Channel) -> anyhow::Result<QueryPoolResponse> {
     let res = StakingQueryClient::new(channel)
         .pool(QueryPoolRequest {})
         .await?
@@ -17,7 +16,7 @@ pub async fn get_pool(
 
 pub async fn get_validators(
     channel: Channel,
-    query_validators_request: QueryValidatorsRequest
+    query_validators_request: QueryValidatorsRequest,
 ) -> anyhow::Result<QueryValidatorsResponse> {
     let res = StakingQueryClient::new(channel)
         .validators(query_validators_request)

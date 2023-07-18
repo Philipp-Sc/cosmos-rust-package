@@ -1,12 +1,12 @@
-use prost_types::{Duration, Timestamp};
-use std::fmt;
-use std::hash::{Hash};
+use prost_types::Duration;
 use serde::{Deserialize, Serialize};
+use std::fmt;
+use std::hash::Hash;
 
-use cosmos_sdk_proto::cosmos::gov::v1beta1::{QueryParamsResponse, TallyParams};
-use crate::api::custom::types::ProtoMessageWrapper;
-use num_format::{Locale, ToFormattedString};
 use crate::api::core::cosmos::channels::SupportedBlockchain;
+use crate::api::custom::types::ProtoMessageWrapper;
+use cosmos_sdk_proto::cosmos::gov::v1beta1::{QueryParamsResponse, TallyParams};
+use num_format::{Locale, ToFormattedString};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Hash)]
 pub struct ParamsExt {
@@ -16,7 +16,11 @@ pub struct ParamsExt {
 }
 
 impl ParamsExt {
-    pub fn new(blockchain: SupportedBlockchain, params_type: &str, params: QueryParamsResponse) -> Self {
+    pub fn new(
+        blockchain: SupportedBlockchain,
+        params_type: &str,
+        params: QueryParamsResponse,
+    ) -> Self {
         Self {
             blockchain,
             params_type: params_type.to_string(),
@@ -31,13 +35,28 @@ impl fmt::Display for ParamsExt {
         if let Some(voting_params) = &self.params.0.voting_params {
             if let Some(voting_period) = &voting_params.voting_period {
                 if voting_period.seconds != 0i64 || voting_period.nanos != 0i32 {
-                    parts.push(format!("\nVoting period: {}", DurationExt(voting_period).get_formatted_duration()));
+                    parts.push(format!(
+                        "\nVoting period: {}",
+                        DurationExt(voting_period).get_formatted_duration()
+                    ));
                 }
             }
         }
         if let Some(deposit_params) = &self.params.0.deposit_params {
-            let min_deposit_str = deposit_params.min_deposit.iter()
-                .map(|coin_ext| format!("{} {}", coin_ext.amount.parse::<u128>().unwrap_or(0u128).to_formatted_string(&Locale::en), coin_ext.denom))
+            let min_deposit_str = deposit_params
+                .min_deposit
+                .iter()
+                .map(|coin_ext| {
+                    format!(
+                        "{} {}",
+                        coin_ext
+                            .amount
+                            .parse::<u128>()
+                            .unwrap_or(0u128)
+                            .to_formatted_string(&Locale::en),
+                        coin_ext.denom
+                    )
+                })
                 .collect::<Vec<_>>()
                 .join(", ");
             if !min_deposit_str.is_empty() {
@@ -45,7 +64,10 @@ impl fmt::Display for ParamsExt {
             }
             if let Some(max_deposit_period) = &deposit_params.max_deposit_period {
                 if max_deposit_period.seconds != 0i64 || max_deposit_period.nanos != 0i32 {
-                    parts.push(format!("\nMax deposit period: {}", DurationExt(max_deposit_period).get_formatted_duration()));
+                    parts.push(format!(
+                        "\nMax deposit period: {}",
+                        DurationExt(max_deposit_period).get_formatted_duration()
+                    ));
                 }
             }
         }
@@ -55,19 +77,27 @@ impl fmt::Display for ParamsExt {
             let threshold = tally_params_ext.get_threshold();
             let veto_threshold = tally_params_ext.get_veto_threshold();
             if quorum != 0f64 || threshold != 0f64 || veto_threshold != 0f64 {
-                parts.push(format!("\nQuorum: {:.2}%,\nThreshold: {:.2}%,\nVeto threshold: {:.2}%", quorum * 100.0, threshold * 100.0, veto_threshold * 100.0));
+                parts.push(format!(
+                    "\nQuorum: {:.2}%,\nThreshold: {:.2}%,\nVeto threshold: {:.2}%",
+                    quorum * 100.0,
+                    threshold * 100.0,
+                    veto_threshold * 100.0
+                ));
             }
         }
         write!(f, "{}", parts.join(", "))
     }
 }
 
-
 pub struct DurationExt<'a>(pub &'a Duration);
 
-impl <'a>DurationExt<'a> {
+impl<'a> DurationExt<'a> {
     pub fn to_duration(&self) -> chrono::Duration {
-        chrono::Duration::from_std(std::time::Duration::new(self.0.seconds as u64, self.0.nanos as u32)).unwrap()
+        chrono::Duration::from_std(std::time::Duration::new(
+            self.0.seconds as u64,
+            self.0.nanos as u32,
+        ))
+        .unwrap()
     }
     pub fn get_formatted_duration(&self) -> String {
         let seconds = self.to_duration().num_seconds();
@@ -76,22 +106,49 @@ impl <'a>DurationExt<'a> {
         let days = hours / 24;
 
         if days > 0 {
-            format!("{}d{}{}{}",
-                    days,
-                    if hours % 24 > 0 { format!(" {}h", hours % 24) } else { String::new() },
-                    if minutes % 60 > 0 { format!(" {}m", minutes % 60) } else { String::new() },
-                    if seconds % 60 > 0 { format!(" {}s", seconds % 60) } else { String::new() },
+            format!(
+                "{}d{}{}{}",
+                days,
+                if hours % 24 > 0 {
+                    format!(" {}h", hours % 24)
+                } else {
+                    String::new()
+                },
+                if minutes % 60 > 0 {
+                    format!(" {}m", minutes % 60)
+                } else {
+                    String::new()
+                },
+                if seconds % 60 > 0 {
+                    format!(" {}s", seconds % 60)
+                } else {
+                    String::new()
+                },
             )
         } else if hours > 0 {
-            format!("{}h{}{}",
-                    hours,
-                    if minutes % 60 > 0 { format!(" {}m", minutes % 60) } else { String::new() },
-                    if seconds % 60 > 0 { format!(" {}s", seconds % 60) } else { String::new() },
+            format!(
+                "{}h{}{}",
+                hours,
+                if minutes % 60 > 0 {
+                    format!(" {}m", minutes % 60)
+                } else {
+                    String::new()
+                },
+                if seconds % 60 > 0 {
+                    format!(" {}s", seconds % 60)
+                } else {
+                    String::new()
+                },
             )
         } else if minutes > 0 {
-            format!("{}m{}",
-                    minutes,
-                    if seconds % 60 > 0 { format!(" {}s", seconds % 60) } else { String::new() },
+            format!(
+                "{}m{}",
+                minutes,
+                if seconds % 60 > 0 {
+                    format!(" {}s", seconds % 60)
+                } else {
+                    String::new()
+                },
             )
         } else {
             format!("{}s", seconds)

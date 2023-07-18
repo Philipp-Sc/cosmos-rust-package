@@ -1,36 +1,29 @@
-use crate::api::core::cosmos::channels::{get_supported_blockchains, SupportedBlockchain};
-use crate::api::core::*;
+use crate::api::core::cosmos::channels::SupportedBlockchain;
+
 use prost_types::Timestamp;
 use std::cmp::Ordering;
 use std::collections::hash_map::DefaultHasher;
-use std::collections::HashSet;
-use std::fmt;
+
 use std::hash::{Hash, Hasher};
 
 use std::string::ToString;
-use bitcoin::bech32::ToBase32;
+
 use strum_macros;
 use strum_macros::EnumIter;
 
 use chrono::NaiveDateTime;
 use chrono::{DateTime, Utc};
-use cosmos_sdk_proto::prost::EncodeError;
 
-use lazy_static::lazy_static;
-use regex::Regex;
-use serde::{Deserialize, Deserializer, Serialize};
-
-use cosmos_sdk_proto::cosmos::base::query::v1beta1::PageRequest;
-use cosmos_sdk_proto::cosmos::gov::v1beta1::{QueryParamsResponse, QueryTallyResultResponse};
-use linkify::LinkFinder;
+use serde::{Deserialize, Serialize};
 
 use cosmos_sdk_proto::prost::Message;
-use serde::ser::{Serializer,SerializeStruct};
+
 use crate::api::custom::types::gov::tally_ext::TallyHelper;
 use crate::api::custom::types::ProtoMessageWrapper;
 
-
-#[derive(Deserialize, Serialize, strum_macros::Display, Debug, Clone, Eq, PartialEq, EnumIter, Hash)]
+#[derive(
+    Deserialize, Serialize, strum_macros::Display, Debug, Clone, Eq, PartialEq, EnumIter, Hash,
+)]
 pub enum ProposalStatus {
     /*
     StatusNil           ProposalStatus = 0x00
@@ -152,128 +145,118 @@ impl ProposalExt {
         s.finish()
     }
     pub fn content_opt(&self) -> Option<ProposalContent> {
-        let proposal_content = self.proposal.0.content.as_ref().map(|any| Self::content(&any));
+        let proposal_content = self
+            .proposal
+            .0
+            .content
+            .as_ref()
+            .map(|any| Self::content(&any));
         proposal_content
     }
 
     pub fn content(any: &cosmos_sdk_proto::Any) -> ProposalContent {
- 
-            let a = any.type_url.to_string();
-            match a.as_ref() {
-                "/cosmos.gov.v1beta1.TextProposal" => ProposalContent::TextProposal(
-                    cosmos_sdk_proto::traits::MessageExt::from_any(any).ok()
-                ),
-                "/cosmos.distribution.v1beta1.CommunityPoolSpendProposal" => {
-                    ProposalContent::CommunityPoolSpendProposal(
-                        cosmos_sdk_proto::traits::MessageExt::from_any(any).ok()
-                    )
-                }
-                "/cosmos.params.v1beta1.ParameterChangeProposal" => {
-                    ProposalContent::ParameterChangeProposal(
-                        cosmos_sdk_proto::traits::MessageExt::from_any(any).ok()
-                    )
-                }
-                "/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal" => {
-                    ProposalContent::SoftwareUpgradeProposal(
-                        cosmos_sdk_proto::traits::MessageExt::from_any(any).ok()
-                    )
-                }
-                "/ibc.core.client.v1.ClientUpdateProposal" => {
-                    ProposalContent::ClientUpdateProposal(
-                        cosmos_sdk_proto::traits::MessageExt::from_any(any).ok()
-                    )
-                }
-                "/osmosis.poolincentives.v1beta1.UpdatePoolIncentivesProposal" => {
-                    let decoded = osmosis_std::types::osmosis::poolincentives::v1beta1::UpdatePoolIncentivesProposal::decode(&*any.value).ok();
-                    ProposalContent::UpdatePoolIncentivesProposal(decoded)
-                }
-                "/cosmwasm.wasm.v1.StoreCodeProposal" => {
-                    ProposalContent::StoreCodeProposal(
-                        cosmos_sdk_proto::traits::MessageExt::from_any(any).ok()
-                    )
-                }
-                "/cosmwasm.wasm.v1.InstantiateContractProposal" => {
-                    ProposalContent::InstantiateContractProposal(
-                        cosmos_sdk_proto::traits::MessageExt::from_any(any).ok()
-                    )
-                }
-                "/osmosis.superfluid.v1beta1.RemoveSuperfluidAssetsProposal" => {
-                    let decoded = osmosis_std::types::osmosis::superfluid::v1beta1::RemoveSuperfluidAssetsProposal::decode(&*any.value).ok();
-                    ProposalContent::RemoveSuperfluidAssetsProposal(decoded)
-                }
-                "/osmosis.superfluid.v1beta1.SetSuperfluidAssetsProposal" => {
-                    let decoded = osmosis_std::types::osmosis::superfluid::v1beta1::SetSuperfluidAssetsProposal::decode(&*any.value).ok();
-                    ProposalContent::SetSuperfluidAssetsProposal(decoded)
-                }
-                "/osmosis.txfees.v1beta1.UpdateFeeTokenProposal" => {
-                    let decoded = osmosis_std::types::osmosis::txfees::v1beta1::UpdateFeeTokenProposal::decode(&*any.value).ok();
-                    ProposalContent::UpdateFeeTokenProposal(decoded)
-                }
-                "/osmosis.poolincentives.v1beta1.ReplacePoolIncentivesProposal" => {
-                    let decoded = osmosis_std::types::osmosis::poolincentives::v1beta1::ReplacePoolIncentivesProposal::decode(&*any.value).ok();
-                    ProposalContent::ReplacePoolIncentivesProposal(decoded)
-                }
-                "/cosmwasm.wasm.v1.MigrateContractProposal" => {
-                    ProposalContent::MigrateContractProposal(
-                        cosmos_sdk_proto::traits::MessageExt::from_any(any).ok()
-                    )
-                }
-                "/cosmwasm.wasm.v1.UpdateInstantiateConfigProposal" => {
-                    ProposalContent::UpdateInstantiateConfigProposal(
-                        cosmos_sdk_proto::traits::MessageExt::from_any(any).ok()
-                    )
-                }
-                "/cosmwasm.wasm.v1.SudoContractProposal" => {
-                    ProposalContent::SudoContractProposal(
-                        cosmos_sdk_proto::traits::MessageExt::from_any(any).ok()
-                    )
-                }
-                "/cosmwasm.wasm.v1.ExecuteContractProposal" => {
-                    ProposalContent::ExecuteContractProposal(
-                        cosmos_sdk_proto::traits::MessageExt::from_any(any).ok()
-                    )
-                }
-                "/cosmwasm.wasm.v1.UpdateAdminProposal" => {
-                    ProposalContent::UpdateAdminProposal(
-                        cosmos_sdk_proto::traits::MessageExt::from_any(any).ok()
-                    )
-                }
-                "/cosmwasm.wasm.v1.ClearAdminProposal" => {
-                    ProposalContent::ClearAdminProposal(
-                        cosmos_sdk_proto::traits::MessageExt::from_any(any).ok()
-                    )
-                }
-                "/cosmwasm.wasm.v1.PinCodesProposal" => ProposalContent::PinCodesProposal(
-                    cosmos_sdk_proto::traits::MessageExt::from_any(any).ok()
-                ),
-                "/cosmwasm.wasm.v1.UnpinCodesProposal" => {
-                    ProposalContent::UnpinCodesProposal(
-                        cosmos_sdk_proto::traits::MessageExt::from_any(any).ok()
-                    )
-                }
-                &_ => ProposalContent::UnknownProposalType(a),
+        let a = any.type_url.to_string();
+        match a.as_ref() {
+            "/cosmos.gov.v1beta1.TextProposal" => ProposalContent::TextProposal(
+                cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+            ),
+            "/cosmos.distribution.v1beta1.CommunityPoolSpendProposal" => {
+                ProposalContent::CommunityPoolSpendProposal(
+                    cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+                )
             }
+            "/cosmos.params.v1beta1.ParameterChangeProposal" => {
+                ProposalContent::ParameterChangeProposal(
+                    cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+                )
+            }
+            "/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal" => {
+                ProposalContent::SoftwareUpgradeProposal(
+                    cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+                )
+            }
+            "/ibc.core.client.v1.ClientUpdateProposal" => ProposalContent::ClientUpdateProposal(
+                cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+            ),
+            "/osmosis.poolincentives.v1beta1.UpdatePoolIncentivesProposal" => {
+                let decoded = osmosis_std::types::osmosis::poolincentives::v1beta1::UpdatePoolIncentivesProposal::decode(&*any.value).ok();
+                ProposalContent::UpdatePoolIncentivesProposal(decoded)
+            }
+            "/cosmwasm.wasm.v1.StoreCodeProposal" => ProposalContent::StoreCodeProposal(
+                cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+            ),
+            "/cosmwasm.wasm.v1.InstantiateContractProposal" => {
+                ProposalContent::InstantiateContractProposal(
+                    cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+                )
+            }
+            "/osmosis.superfluid.v1beta1.RemoveSuperfluidAssetsProposal" => {
+                let decoded = osmosis_std::types::osmosis::superfluid::v1beta1::RemoveSuperfluidAssetsProposal::decode(&*any.value).ok();
+                ProposalContent::RemoveSuperfluidAssetsProposal(decoded)
+            }
+            "/osmosis.superfluid.v1beta1.SetSuperfluidAssetsProposal" => {
+                let decoded = osmosis_std::types::osmosis::superfluid::v1beta1::SetSuperfluidAssetsProposal::decode(&*any.value).ok();
+                ProposalContent::SetSuperfluidAssetsProposal(decoded)
+            }
+            "/osmosis.txfees.v1beta1.UpdateFeeTokenProposal" => {
+                let decoded =
+                    osmosis_std::types::osmosis::txfees::v1beta1::UpdateFeeTokenProposal::decode(
+                        &*any.value,
+                    )
+                    .ok();
+                ProposalContent::UpdateFeeTokenProposal(decoded)
+            }
+            "/osmosis.poolincentives.v1beta1.ReplacePoolIncentivesProposal" => {
+                let decoded = osmosis_std::types::osmosis::poolincentives::v1beta1::ReplacePoolIncentivesProposal::decode(&*any.value).ok();
+                ProposalContent::ReplacePoolIncentivesProposal(decoded)
+            }
+            "/cosmwasm.wasm.v1.MigrateContractProposal" => {
+                ProposalContent::MigrateContractProposal(
+                    cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+                )
+            }
+            "/cosmwasm.wasm.v1.UpdateInstantiateConfigProposal" => {
+                ProposalContent::UpdateInstantiateConfigProposal(
+                    cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+                )
+            }
+            "/cosmwasm.wasm.v1.SudoContractProposal" => ProposalContent::SudoContractProposal(
+                cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+            ),
+            "/cosmwasm.wasm.v1.ExecuteContractProposal" => {
+                ProposalContent::ExecuteContractProposal(
+                    cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+                )
+            }
+            "/cosmwasm.wasm.v1.UpdateAdminProposal" => ProposalContent::UpdateAdminProposal(
+                cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+            ),
+            "/cosmwasm.wasm.v1.ClearAdminProposal" => ProposalContent::ClearAdminProposal(
+                cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+            ),
+            "/cosmwasm.wasm.v1.PinCodesProposal" => ProposalContent::PinCodesProposal(
+                cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+            ),
+            "/cosmwasm.wasm.v1.UnpinCodesProposal" => ProposalContent::UnpinCodesProposal(
+                cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+            ),
+            &_ => ProposalContent::UnknownProposalType(a),
+        }
     }
 
-    pub fn is_in_deposit_period(
-        &self
-    ) -> bool {
+    pub fn is_in_deposit_period(&self) -> bool {
         self.status == ProposalStatus::StatusDepositPeriod
     }
 
-    pub fn get_timestamp_based_on_proposal_status(
-        &self
-    ) -> &Option<Timestamp> {
+    pub fn get_timestamp_based_on_proposal_status(&self) -> &Option<Timestamp> {
         match self.status {
             ProposalStatus::StatusNil | ProposalStatus::StatusDepositPeriod => {
                 &self.proposal.0.submit_time
-            },
-            ProposalStatus::StatusVotingPeriod => {
-                &self.proposal.0.voting_start_time
-            },
-            ProposalStatus::StatusPassed | ProposalStatus::StatusFailed  | ProposalStatus::StatusRejected => {
-                &self.proposal.0.voting_end_time
-            },
+            }
+            ProposalStatus::StatusVotingPeriod => &self.proposal.0.voting_start_time,
+            ProposalStatus::StatusPassed
+            | ProposalStatus::StatusFailed
+            | ProposalStatus::StatusRejected => &self.proposal.0.voting_end_time,
         }
     }
 
@@ -349,105 +332,65 @@ impl ProposalExt {
     }
     pub fn get_title(&self) -> String {
         match &self.content_opt() {
-            Some(ProposalContent::TextProposal(Some(p))) => {
-                p.title.to_owned()
-            }
-            Some(ProposalContent::CommunityPoolSpendProposal(Some(p))) => {
-                p.title.to_owned()
-            }
-            Some(ProposalContent::ParameterChangeProposal(Some(p))) => {
-                p.title.to_owned()
-            }
-            Some(ProposalContent::SoftwareUpgradeProposal(Some(p))) => {
-                p.title.to_owned()
-            }
-            Some(ProposalContent::ClientUpdateProposal(Some(p))) => {
-                p.title.to_owned()
-            }
-            Some(ProposalContent::UpdatePoolIncentivesProposal(Some(p))) => {
-                p.title.to_owned()
-            }
-            Some(ProposalContent::StoreCodeProposal(Some(p))) => {
-                p.title.to_owned()
-            }
-            Some(ProposalContent::RemoveSuperfluidAssetsProposal(Some(p))) => {
-                p.title.to_owned()
-            }
-            Some(ProposalContent::InstantiateContractProposal(Some(p))) => {
-                p.title.to_owned()
-            }
-            Some(ProposalContent::ReplacePoolIncentivesProposal(Some(p))) => {
-                p.title.to_owned()
-            }
-            Some(ProposalContent::SetSuperfluidAssetsProposal(Some(p))) => {
-                p.title.to_owned()
-            }
-            Some(ProposalContent::UpdateFeeTokenProposal(Some(p))) => {
-                p.title.to_owned()
-            }
-            Some(ProposalContent::MigrateContractProposal(Some(p))) => {
-                p.title.to_owned()
-            }
-            Some(ProposalContent::UpdateInstantiateConfigProposal(Some(p))) => {
-                p.title.to_owned()
-            }
-            Some(ProposalContent::SudoContractProposal(Some(p))) => {
-                p.title.to_owned()
-            }
-            Some(ProposalContent::ExecuteContractProposal(Some(p))) => {
-                p.title.to_owned()
-            }
-            Some(ProposalContent::UpdateAdminProposal(Some(p))) => {
-                p.title.to_owned()
-            }
-            Some(ProposalContent::ClearAdminProposal(Some(p))) => {
-                p.title.to_owned()
-            }
-            Some(ProposalContent::UnpinCodesProposal(Some(p))) => {
-                p.title.to_owned()
-            }
-            Some(ProposalContent::UnknownProposalType(type_url)) =>
+            Some(ProposalContent::TextProposal(Some(p))) => p.title.to_owned(),
+            Some(ProposalContent::CommunityPoolSpendProposal(Some(p))) => p.title.to_owned(),
+            Some(ProposalContent::ParameterChangeProposal(Some(p))) => p.title.to_owned(),
+            Some(ProposalContent::SoftwareUpgradeProposal(Some(p))) => p.title.to_owned(),
+            Some(ProposalContent::ClientUpdateProposal(Some(p))) => p.title.to_owned(),
+            Some(ProposalContent::UpdatePoolIncentivesProposal(Some(p))) => p.title.to_owned(),
+            Some(ProposalContent::StoreCodeProposal(Some(p))) => p.title.to_owned(),
+            Some(ProposalContent::RemoveSuperfluidAssetsProposal(Some(p))) => p.title.to_owned(),
+            Some(ProposalContent::InstantiateContractProposal(Some(p))) => p.title.to_owned(),
+            Some(ProposalContent::ReplacePoolIncentivesProposal(Some(p))) => p.title.to_owned(),
+            Some(ProposalContent::SetSuperfluidAssetsProposal(Some(p))) => p.title.to_owned(),
+            Some(ProposalContent::UpdateFeeTokenProposal(Some(p))) => p.title.to_owned(),
+            Some(ProposalContent::MigrateContractProposal(Some(p))) => p.title.to_owned(),
+            Some(ProposalContent::UpdateInstantiateConfigProposal(Some(p))) => p.title.to_owned(),
+            Some(ProposalContent::SudoContractProposal(Some(p))) => p.title.to_owned(),
+            Some(ProposalContent::ExecuteContractProposal(Some(p))) => p.title.to_owned(),
+            Some(ProposalContent::UpdateAdminProposal(Some(p))) => p.title.to_owned(),
+            Some(ProposalContent::ClearAdminProposal(Some(p))) => p.title.to_owned(),
+            Some(ProposalContent::UnpinCodesProposal(Some(p))) => p.title.to_owned(),
+            Some(ProposalContent::UnknownProposalType(_type_url)) => {
                 "UnknownProposalTypeError".to_string()
-            ,
-            Some(_) =>
-                "ProposalContentDecodeError".to_string()
-            ,
-            None =>
-                "ProposalDecodeError".to_string()
-            ,
+            }
+            Some(_) => "ProposalContentDecodeError".to_string(),
+            None => "ProposalDecodeError".to_string(),
         }
     }
 
     pub fn proposal_preview_msg(&self, fraud_classification: Option<f64>) -> String {
         let title = self.get_title();
 
-        let mut proposal_id = self.get_proposal_id();
+        let proposal_id = self.get_proposal_id();
 
-        let mut display = format!("{}\n\n{}\n#{}  -  {}\n{}",
-                                  &self.blockchain.display,
-                                  self.content_opt().map(|x| x.to_string()).unwrap_or("Proposal".to_string()),
-                                  proposal_id,
-                                  &self.status.to_icon(),
-                                  title,
+        let mut display = format!(
+            "{}\n\n{}\n#{}  -  {}\n{}",
+            &self.blockchain.display,
+            self.content_opt()
+                .map(|x| x.to_string())
+                .unwrap_or("Proposal".to_string()),
+            proposal_id,
+            &self.status.to_icon(),
+            title,
         );
 
         if let Some(prediction) = fraud_classification {
             let label = if prediction >= 0.7 {
-                format!("🚨 {}",Self::map_prediction_to_string(prediction))
-            }else if prediction >= 0.35 {
-                format!("⚠ {}",Self::map_prediction_to_string(prediction))
-            }else if prediction >= 0.30 {
-                format!("❗ {}",Self::map_prediction_to_string(prediction))
-            }else if prediction > 0.25 {
-                format!("⁉️️ {}",Self::map_prediction_to_string(prediction))
-            }else{
-                format!("🛡️ {}",Self::map_prediction_to_string(prediction))
+                format!("🚨 {}", Self::map_prediction_to_string(prediction))
+            } else if prediction >= 0.35 {
+                format!("⚠ {}", Self::map_prediction_to_string(prediction))
+            } else if prediction >= 0.30 {
+                format!("❗ {}", Self::map_prediction_to_string(prediction))
+            } else if prediction > 0.25 {
+                format!("⁉️️ {}", Self::map_prediction_to_string(prediction))
+            } else {
+                format!("🛡️ {}", Self::map_prediction_to_string(prediction))
             };
-            display = format!("{}\n\n{}",display,label);
+            display = format!("{}\n\n{}", display, label);
         }
         display
     }
-
 
     fn map_prediction_to_string(number: f64) -> String {
         let mut result = String::new();
@@ -455,7 +398,7 @@ impl ProposalExt {
         let filled_blocks = (number * 10.0).round() as usize;
         for i in 0..filled_blocks {
             result.push('●');
-            if i==3 {
+            if i == 3 {
                 result.push('|');
             }
         }
@@ -463,7 +406,7 @@ impl ProposalExt {
         let empty_blocks = 10 - filled_blocks;
         for i in 0..empty_blocks {
             result.push('○');
-            if i+filled_blocks==3 {
+            if i + filled_blocks == 3 {
                 result.push('|');
             }
         }
@@ -479,8 +422,8 @@ impl ProposalExt {
                         NaiveDateTime::from_timestamp_opt(time.seconds, time.nanos as u32).unwrap(),
                         Utc,
                     )
-                        .to_rfc2822()
-                        .replace("+0000", "UTC")
+                    .to_rfc2822()
+                    .replace("+0000", "UTC")
                 } else {
                     "".to_string()
                 }
@@ -492,8 +435,14 @@ impl ProposalExt {
     fn get_voting_start_and_end(&self) -> (String, String) {
         let proposal = &self.proposal.0;
         (
-            format!("{}", Self::timestamp_to_string(proposal.voting_start_time.clone())),
-            format!("{}", Self::timestamp_to_string(proposal.voting_end_time.clone())),
+            format!(
+                "{}",
+                Self::timestamp_to_string(proposal.voting_start_time.clone())
+            ),
+            format!(
+                "{}",
+                Self::timestamp_to_string(proposal.voting_end_time.clone())
+            ),
         )
     }
 
@@ -514,12 +463,16 @@ impl ProposalExt {
 
     pub fn final_tally_with_no_with_veto_majority(&self) -> bool {
         let proposal = &self.proposal.0;
-        proposal.final_tally_result.clone().map(|y| {
-            let no_with_veto = y.no_with_veto.parse::<f64>().unwrap_or(0f64);
-            let yes =  y.yes.parse::<f64>().unwrap_or(0f64);
-            let no = y.no.parse::<f64>().unwrap_or(0f64);
-            no_with_veto > yes && no_with_veto > no
-        }).unwrap_or(false)
+        proposal
+            .final_tally_result
+            .clone()
+            .map(|y| {
+                let no_with_veto = y.no_with_veto.parse::<f64>().unwrap_or(0f64);
+                let yes = y.yes.parse::<f64>().unwrap_or(0f64);
+                let no = y.no.parse::<f64>().unwrap_or(0f64);
+                no_with_veto > yes && no_with_veto > no
+            })
+            .unwrap_or(false)
     }
 
     pub fn get_final_tally_result(&self) -> String {
@@ -537,15 +490,18 @@ impl ProposalExt {
 
     pub fn governance_proposal_link(&self) -> String {
         // format!("https://www.mintscan.io/{}/proposals/{}",blockchain_name,proposal_id)
-        format!("{}{}",self.blockchain.governance_proposals_link,self.get_proposal_id())
+        format!(
+            "{}{}",
+            self.blockchain.governance_proposals_link,
+            self.get_proposal_id()
+        )
     }
-
 
     pub fn tally_details(&self) -> Option<String> {
         let proposal = &self.proposal.0;
         if let Some(tally) = &proposal.final_tally_result {
             Some(TallyHelper(tally).tally_details())
-        }else{
+        } else {
             None
         }
     }
@@ -555,11 +511,10 @@ impl ProposalExt {
         Self::timestamp_to_string(proposal.submit_time.clone())
     }
 
-
     pub fn proposal_state(&self) -> String {
         let proposal = &self.proposal.0;
         let (voting_start_text, voting_end_text) = self.get_voting_start_and_end();
-        let mut tally_result = self.get_final_tally_result();
+        let tally_result = self.get_final_tally_result();
 
         let mut voting_state = "".to_string();
         if &self.status == &ProposalStatus::StatusVotingPeriod {
@@ -569,7 +524,7 @@ impl ProposalExt {
                     NaiveDateTime::from_timestamp_opt(time.seconds, time.nanos as u32).unwrap(),
                     Utc,
                 )
-                    .cmp(&Utc::now())
+                .cmp(&Utc::now())
                 {
                     Ordering::Less | Ordering::Equal => {
                         voting_start = true;
@@ -585,7 +540,7 @@ impl ProposalExt {
                     NaiveDateTime::from_timestamp_opt(time.seconds, time.nanos as u32).unwrap(),
                     Utc,
                 )
-                    .cmp(&Utc::now())
+                .cmp(&Utc::now())
                 {
                     Ordering::Less | Ordering::Equal => {
                         voting_end = true;
@@ -610,6 +565,8 @@ impl ProposalExt {
             &self.status.to_icon(),
             voting_state,
             tally_result,
-        ).trim().to_string()
+        )
+        .trim()
+        .to_string()
     }
 }

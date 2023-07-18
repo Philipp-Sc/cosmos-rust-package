@@ -12,8 +12,8 @@ use std::hash::{Hash, Hasher};
 pub struct ProtoMessageWrapper<T>(pub T);
 
 impl<T> ProtoMessageWrapper<T>
-    where
-        T: Message + Default,
+where
+    T: Message + Default,
 {
     fn into_inner(self) -> T {
         self.0
@@ -25,12 +25,12 @@ impl<T> ProtoMessageWrapper<T>
 }
 
 impl<T> Serialize for ProtoMessageWrapper<T>
-    where
-        T: Message + Default,
+where
+    T: Message + Default,
 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: serde::Serializer,
+    where
+        S: serde::Serializer,
     {
         let bytes = self.0.encode_to_vec();
         serializer.serialize_bytes(&bytes)
@@ -38,12 +38,12 @@ impl<T> Serialize for ProtoMessageWrapper<T>
 }
 
 impl<'de, T> Deserialize<'de> for ProtoMessageWrapper<T>
-    where
-        T: Message + Default,
+where
+    T: Message + Default,
 {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: serde::Deserializer<'de>,
+    where
+        D: serde::Deserializer<'de>,
     {
         let bytes: Vec<u8> = serde::Deserialize::deserialize(deserializer)?;
         T::decode(&bytes[..])
@@ -53,8 +53,8 @@ impl<'de, T> Deserialize<'de> for ProtoMessageWrapper<T>
 }
 
 impl<T> Hash for ProtoMessageWrapper<T>
-    where
-        T: Message,
+where
+    T: Message,
 {
     fn hash<H: Hasher>(&self, state: &mut H) {
         let bytes = self.0.encode_to_vec();

@@ -1,13 +1,11 @@
+pub mod auth;
 pub mod gov;
 pub mod staking;
-pub mod auth;
-
 
 use cosmos_sdk_proto::cosmwasm::wasm::v1::query_client::QueryClient;
 use cosmos_sdk_proto::cosmwasm::wasm::v1::*;
 
 use tonic::transport::Channel;
-
 
 pub async fn get_contract_info(
     channel: Channel,

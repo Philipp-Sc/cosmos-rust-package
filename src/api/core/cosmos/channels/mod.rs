@@ -3,20 +3,19 @@ use tonic::transport::channel::Channel;
 
 use cosmos_sdk_proto::cosmos::base::tendermint::v1beta1::GetNodeInfoRequest;
 use lazy_static::lazy_static;
-use std::ffi::OsStr;
+
 use std::fmt::Debug;
 use std::fs::File;
 use std::hash::{Hash, Hasher};
 use std::io::BufReader;
-use std::ops::Not;
+
+use log::{debug, error, info};
 use std::process::Command;
 use std::process::Output;
-use log::{debug, error, info};
-use tokio::task::{AbortHandle, JoinSet};
+use tokio::task::JoinSet;
 
-use serde::{Deserialize, Serialize};
 use rand::seq::SliceRandom;
-
+use serde::{Deserialize, Serialize};
 
 lazy_static! {
     static ref SUPPORTED_BLOCKCHAINS: HashMap<String, SupportedBlockchain> = {
@@ -38,8 +37,7 @@ pub struct SupportedBlockchain {
     pub governance_proposals_link: String,
 }
 
-impl Hash for SupportedBlockchain
-{
+impl Hash for SupportedBlockchain {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.name.hash(state);
     }
@@ -48,7 +46,7 @@ impl Hash for SupportedBlockchain
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Hash)]
 pub struct GRPC_Service {
     pub grpc_urls: Vec<String>, // viable grpc_urls
-    pub error: Option<String>,    // error msg if no url could be selected
+    pub error: Option<String>,  // error msg if no url could be selected
 }
 
 impl SupportedBlockchain {
@@ -60,15 +58,14 @@ impl SupportedBlockchain {
                 err.to_string()
             ))),
             None => {
-                let selected_grpc_service = self.grpc_service.grpc_urls.choose(&mut rand::thread_rng());
+                let selected_grpc_service =
+                    self.grpc_service.grpc_urls.choose(&mut rand::thread_rng());
                 match selected_grpc_service {
                     Some(grpc_service) => get_channel(grpc_service.to_owned()).await,
-                    None => {
-                        Err(anyhow::anyhow!(format!(
-                            "Error: {} is not a supported cosmos blockchain: Error: Missing GRPC URL!",
-                            self.name,
-                        )))
-                    }
+                    None => Err(anyhow::anyhow!(format!(
+                        "Error: {} is not a supported cosmos blockchain: Error: Missing GRPC URL!",
+                        self.name,
+                    ))),
                 }
             }
         }
@@ -78,7 +75,9 @@ impl SupportedBlockchain {
 async fn get_channel(grpc_url: String) -> anyhow::Result<Channel> {
     let endpoint =
         tonic::transport::Endpoint::new(grpc_url.parse::<tonic::transport::Uri>().unwrap())
-            .unwrap().timeout(std::time::Duration::from_secs(60)).connect_timeout(std::time::Duration::from_secs(60));
+            .unwrap()
+            .timeout(std::time::Duration::from_secs(60))
+            .connect_timeout(std::time::Duration::from_secs(60));
     match endpoint.connect().await {
         Ok(result) => Ok(result),
         Err(err) => Err(anyhow::anyhow!(err)),
@@ -86,10 +85,10 @@ async fn get_channel(grpc_url: String) -> anyhow::Result<Channel> {
 }
 
 async fn test_grpc_url(grpc_url: String) -> anyhow::Result<String> {
-    info!("Testing gRPC URL: {}",&grpc_url);
+    info!("Testing gRPC URL: {}", &grpc_url);
     match get_channel(grpc_url.to_owned()).await {
         Ok(c) => {
-            info!("Got Channel for gRPC URL: {}",grpc_url);
+            info!("Got Channel for gRPC URL: {}", grpc_url);
             match cosmos_sdk_proto::cosmos::base::tendermint::v1beta1::service_client::ServiceClient::new(c).get_node_info(GetNodeInfoRequest{}).await {
                 Ok(node_info_response) => {
                     info!("Successful GetNodeInfoResponse for {}",grpc_url);
@@ -103,12 +102,12 @@ async fn test_grpc_url(grpc_url: String) -> anyhow::Result<String> {
             }
         }
         Err(e) => {
-            error!("Unable to establish a connection to {}: {:?}",grpc_url,e);
+            error!("Unable to establish a connection to {}: {:?}", grpc_url, e);
             Err(anyhow::anyhow!(format!(
-            "tonic::transport::Endpoint::connect() failed: {}",
-            e.to_string()
-        )))
-        },
+                "tonic::transport::Endpoint::connect() failed: {}",
+                e.to_string()
+            )))
+        }
     }
 }
 
@@ -116,29 +115,20 @@ async fn check_grpc_url(grpc_url: String) -> anyhow::Result<String> {
     let http = "http://";
     let https = "https://";
 
-    let test_url = if grpc_url.contains(http) || grpc_url.contains(https){
+    let test_url = if grpc_url.contains(http) || grpc_url.contains(https) {
         grpc_url.to_owned()
-    }else{
+    } else {
         format!("{}{}", https, &grpc_url)
     };
 
     match test_grpc_url(test_url).await {
-        Ok(https_grpc_url) => {
-            Ok(https_grpc_url)
+        Ok(https_grpc_url) => Ok(https_grpc_url),
+        Err(err) => match test_grpc_url(format!("{}{}", http, &grpc_url)).await {
+            Ok(http_grpc_url) => Ok(http_grpc_url),
+            Err(err2) => Err(anyhow::anyhow!("https: {}, http: {}", err, err2)),
         },
-        Err(err) => {
-            match test_grpc_url(format!("{}{}", http,&grpc_url)).await {
-                Ok(http_grpc_url) => {
-                    Ok(http_grpc_url)
-                },
-                Err(err2) => {
-                    Err(anyhow::anyhow!("https: {}, http: {}", err, err2))
-                }
-            }
-        }
     }
 }
-
 
 /*
 pub async fn select_channel_from_grpc_endpoints(key_grpc_url_list: Vec<(String,Vec<String>)>) -> Vec<(String,Result<String, anyhow::Error>)> {
@@ -159,7 +149,9 @@ pub async fn select_channel_from_grpc_endpoints(key_grpc_url_list: Vec<(String,V
     }
     channels
 }*/
-pub async fn select_channel_from_grpc_endpoints(key_grpc_url_list: Vec<(String,Vec<String>)>) -> Vec<(String,Result<String, anyhow::Error>)> {
+pub async fn select_channel_from_grpc_endpoints(
+    key_grpc_url_list: Vec<(String, Vec<String>)>,
+) -> Vec<(String, Result<String, anyhow::Error>)> {
     let mut join_set: JoinSet<_> = JoinSet::new();
 
     //let mut key_abort_handles: HashMap<String,Vec<AbortHandle>> = HashMap::new();
@@ -170,7 +162,8 @@ pub async fn select_channel_from_grpc_endpoints(key_grpc_url_list: Vec<(String,V
         for grpc_url in each.1.into_iter() {
             let key_clone = key.clone();
 
-            /*abort_handles.push(*/join_set.spawn(async move {
+            /*abort_handles.push(*/
+            join_set.spawn(async move {
                 (key_clone, match  check_grpc_url(grpc_url).await {
                         Ok(passed) => {
                             Ok(passed)
@@ -183,12 +176,12 @@ pub async fn select_channel_from_grpc_endpoints(key_grpc_url_list: Vec<(String,V
         }
         //key_abort_handles.insert(each.0.to_owned(),abort_handles);
     }
-    let mut channels: Vec<(String,Result<String, anyhow::Error>)> = Vec::new();
+    let mut channels: Vec<(String, Result<String, anyhow::Error>)> = Vec::new();
 
     while let Some(res) = join_set.join_next().await {
-        info!("join_set.len(): {}",join_set.len());
+        info!("join_set.len(): {}", join_set.len());
         match res {
-            Ok((key,result)) => {
+            Ok((key, result)) => {
                 if result.is_ok() {
                     /*
                     if let Some(irrelevant) = key_abort_handles.remove(&key) {
@@ -198,11 +191,11 @@ pub async fn select_channel_from_grpc_endpoints(key_grpc_url_list: Vec<(String,V
                     }
                     */
                 }
-                channels.push((key,result));
-            },
-            Err(err) => {
+                channels.push((key, result));
+            }
+            Err(_err) => {
                 // task did not complete because of a unexpected error or abort
-            },
+            }
         }
     }
     channels
@@ -215,12 +208,12 @@ fn run_cmd(cmd: &str, args: Option<Vec<&str>>) -> anyhow::Result<Output> {
         exit_output.args(args);
     }
     let exit_output = exit_output.output();
-    if let Ok(false) = exit_output.as_ref().map(|x| x.status.success()){
-        error!("run_cmd: cmd: {}, output: {:?}",cmd, exit_output);
-    }else {
-        debug!("run_cmd: cmd: {}, output: {:?}",cmd, exit_output);
+    if let Ok(false) = exit_output.as_ref().map(|x| x.status.success()) {
+        error!("run_cmd: cmd: {}, output: {:?}", cmd, exit_output);
+    } else {
+        debug!("run_cmd: cmd: {}, output: {:?}", cmd, exit_output);
     }
-    Ok(exit_output.map_err(|err| anyhow::anyhow!("{}, command: {}",err.to_string(),command))?)
+    Ok(exit_output.map_err(|err| anyhow::anyhow!("{}, command: {}", err.to_string(), command))?)
 }
 
 pub fn get_supported_blockchains() -> HashMap<String, SupportedBlockchain> {
@@ -263,15 +256,18 @@ pub async fn get_supported_blockchains_from_chain_registry(
         }
     }
 
-    let data = std::fs::read_to_string(json_path).map_err(|err| anyhow::anyhow!("{}, File: {}",err.to_string(), json_path))?;
+    let data = std::fs::read_to_string(json_path)
+        .map_err(|err| anyhow::anyhow!("{}, File: {}", err.to_string(), json_path))?;
     let mut supported_blockchains: HashMap<String, SupportedBlockchain> =
-        serde_json::from_str(&data).map_err(|err| anyhow::anyhow!("{}, File: {}",err.to_string(), json_path))?;
+        serde_json::from_str(&data)
+            .map_err(|err| anyhow::anyhow!("{}, File: {}", err.to_string(), json_path))?;
 
-    let mut list: Vec<(String,Vec<String>)> = Vec::new();
+    let mut list: Vec<(String, Vec<String>)> = Vec::new();
 
     for (k, v) in supported_blockchains.iter() {
         let chain_json = format!("{}/{}/chain.json", &git_path, k);
-        let file = File::open(&chain_json).map_err(|err| anyhow::anyhow!("{}, File: {}",err.to_string(), chain_json))?;
+        let file = File::open(&chain_json)
+            .map_err(|err| anyhow::anyhow!("{}, File: {}", err.to_string(), chain_json))?;
         let reader = BufReader::new(file);
         let chain_info: chain_registry::chain::ChainInfo = serde_json::from_reader(reader)?;
 
@@ -284,7 +280,7 @@ pub async fn get_supported_blockchains_from_chain_registry(
         for hard_coded_grpc_url in v.grpc_service.grpc_urls.iter() {
             try_these_grpc_urls.push(hard_coded_grpc_url.to_owned());
         }
-        list.push((k.clone(),try_these_grpc_urls));
+        list.push((k.clone(), try_these_grpc_urls));
     }
 
     let channels = select_channel_from_grpc_endpoints(list).await;
@@ -292,19 +288,20 @@ pub async fn get_supported_blockchains_from_chain_registry(
     for (k, v) in supported_blockchains.iter_mut() {
         let mut selected: Vec<String> = Vec::new();
         let mut errors: Vec<String> = Vec::new();
-        for each in channels.iter().filter(|x| &x.0 == k){
+        for each in channels.iter().filter(|x| &x.0 == k) {
             match &each.1 {
                 Ok(val) => {
                     selected.push(val.to_owned());
-                },
+                }
                 Err(err) => {
-                    errors.push(format!("{:?}",err));
+                    errors.push(format!("{:?}", err));
                 }
             }
         }
-        if selected.is_empty(){
-            v.grpc_service.error = Some(format!("No viable endpoint for {} found: {:?}", &k, errors));
-        }else{
+        if selected.is_empty() {
+            v.grpc_service.error =
+                Some(format!("No viable endpoint for {} found: {:?}", &k, errors));
+        } else {
             v.grpc_service.error = None;
         }
         v.grpc_service.grpc_urls = selected;
@@ -328,7 +325,7 @@ mod test {
     async fn test_grpc_url_function() {
         let grpc_url = "https://secret-mainnet-grpc.autostake.net:443".to_owned();
         let result = test_grpc_url(grpc_url).await;
-        println!("{:?}",result);
+        println!("{:?}", result);
         assert!(result.is_ok());
     }
 
@@ -337,18 +334,17 @@ mod test {
         let name = "test";
         let grpc_url = "https://secret-mainnet-grpc.autostake.net:443".to_owned();
 
-        let result = select_channel_from_grpc_endpoints(vec![(name.to_string(),vec![grpc_url])]).await;
-        println!("{:?}",result);
+        let result =
+            select_channel_from_grpc_endpoints(vec![(name.to_string(), vec![grpc_url])]).await;
+        println!("{:?}", result);
     }
 
     #[tokio::test]
     async fn test_get_supported_blockchains_from_chain_registrys_function() {
         let path = "../chain-registry";
 
-        let result = get_supported_blockchains_from_chain_registry(path.to_string(),true,None).await;
-        println!("{:?}",result);
+        let result =
+            get_supported_blockchains_from_chain_registry(path.to_string(), true, None).await;
+        println!("{:?}", result);
     }
-
-
-
 }

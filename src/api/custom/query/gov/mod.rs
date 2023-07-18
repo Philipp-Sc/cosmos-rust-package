@@ -1,29 +1,15 @@
-use crate::api::core::cosmos::channels::{get_supported_blockchains, SupportedBlockchain};
+use crate::api::core::cosmos::channels::SupportedBlockchain;
 use crate::api::core::*;
-use prost_types::Timestamp;
-use std::cmp::Ordering;
-use std::collections::hash_map::DefaultHasher;
-use std::collections::HashSet;
-use std::fmt;
-use std::hash::{Hash, Hasher};
 
 use std::string::ToString;
-use strum_macros;
-use strum_macros::EnumIter;
-
-use chrono::NaiveDateTime;
-use chrono::{DateTime, Utc};
-use cosmos_sdk_proto::prost::EncodeError;
 
 use lazy_static::lazy_static;
 use regex::Regex;
-use serde::{Deserialize, Serialize};
 
 use cosmos_sdk_proto::cosmos::base::query::v1beta1::PageRequest;
-use cosmos_sdk_proto::cosmos::gov::v1beta1::{QueryParamsResponse, QueryTallyResultResponse};
+
 use linkify::LinkFinder;
 
-use cosmos_sdk_proto::prost::Message;
 use crate::api::custom::types::gov::params_ext::ParamsExt;
 use crate::api::custom::types::gov::proposal_ext::{ProposalExt, ProposalStatus};
 use crate::api::custom::types::gov::tally_ext::TallyResultExt;
@@ -41,10 +27,9 @@ pub fn get_link_finder() -> LinkFinder {
     finder
 }
 
-
 pub async fn get_validators(
     blockchain: SupportedBlockchain,
-    next_key: Option<Vec<u8>>
+    next_key: Option<Vec<u8>>,
 ) -> anyhow::Result<ValidatorsExt> {
     let channel = blockchain.channel().await?;
     let res = cosmos::query::staking::get_validators(
@@ -57,26 +42,39 @@ pub async fn get_validators(
                 limit: 0,
                 count_total: false,
                 reverse: false,
-            })
-        }
-    ).await?;
+            }),
+        },
+    )
+    .await?;
     Ok(ValidatorsExt::new(blockchain, res))
 }
 
 pub async fn get_params(
     blockchain: SupportedBlockchain,
-    params_type: String) -> anyhow::Result<ParamsExt> {
+    params_type: String,
+) -> anyhow::Result<ParamsExt> {
     let channel = blockchain.channel().await?;
-    let res = cosmos::query::gov::get_params(channel, cosmos_sdk_proto::cosmos::gov::v1beta1::QueryParamsRequest{ params_type: params_type.clone() } ).await?;
+    let res = cosmos::query::gov::get_params(
+        channel,
+        cosmos_sdk_proto::cosmos::gov::v1beta1::QueryParamsRequest {
+            params_type: params_type.clone(),
+        },
+    )
+    .await?;
     Ok(ParamsExt::new(blockchain, &params_type, res))
 }
 
 pub async fn get_tally(
     blockchain: SupportedBlockchain,
-    proposal_id: u64) -> anyhow::Result<TallyResultExt> {
+    proposal_id: u64,
+) -> anyhow::Result<TallyResultExt> {
     let channel = blockchain.channel().await?;
-    let res = cosmos::query::gov::get_tally_result(channel, cosmos_sdk_proto::cosmos::gov::v1beta1::QueryTallyResultRequest{ proposal_id } ).await?;
-    Ok(TallyResultExt::new(blockchain,proposal_id,res))
+    let res = cosmos::query::gov::get_tally_result(
+        channel,
+        cosmos_sdk_proto::cosmos::gov::v1beta1::QueryTallyResultRequest { proposal_id },
+    )
+    .await?;
+    Ok(TallyResultExt::new(blockchain, proposal_id, res))
 }
 
 pub async fn get_proposals(
@@ -110,7 +108,6 @@ pub async fn get_proposals(
     Ok((res.pagination.map(|x| x.next_key), list))
 }
 
-
 #[cfg(test)]
 mod test {
 
@@ -118,9 +115,9 @@ mod test {
     // cargo test -- --list
     // cargo test api::custom::query::gov::test::test_get_proposals_function -- --exact --nocapture
 
+    use super::*;
     use crate::api::core::cosmos::channels::GRPC_Service;
     use crate::api::custom::types::ProtoMessageWrapper;
-    use super::*;
 
     #[tokio::test]
     async fn test_get_proposals_function() {
@@ -128,7 +125,10 @@ mod test {
             display: "Osmosis".to_string(),
             name: "osmosis".to_string(),
             prefix: "osmo".to_string(),
-            grpc_service: GRPC_Service { grpc_url: Some("https://osmosis-grpc.lavenderfive.com:443".to_string()), error: None },
+            grpc_service: GRPC_Service {
+                grpc_url: Some("https://osmosis-grpc.lavenderfive.com:443".to_string()),
+                error: None,
+            },
             governance_proposals_link: "".to_string(),
         };
         let result = get_proposals(supported_blockchain, ProposalStatus::StatusPassed, None).await;
