@@ -17,6 +17,8 @@ use tokio::task::JoinSet;
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
 
+
+
 lazy_static! {
     static ref SUPPORTED_BLOCKCHAINS: HashMap<String, SupportedBlockchain> = {
         let data = std::fs::read_to_string("./tmp/supported_blockchains.json")
@@ -26,6 +28,9 @@ lazy_static! {
         supported_blockchains
     };
 }
+
+pub type SupportedBlockchainType = HashMap<String, SupportedBlockchain>;
+
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct SupportedBlockchain {
