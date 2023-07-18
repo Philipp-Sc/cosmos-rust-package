@@ -8,6 +8,7 @@ use std::fmt::Debug;
 use std::fs::File;
 use std::hash::{Hash, Hasher};
 use std::io::BufReader;
+use std::ops::Not;
 use std::process::Command;
 use std::process::Output;
 use log::{debug, error, info};
@@ -208,75 +209,71 @@ pub async fn select_channel_from_grpc_endpoints(key_grpc_url_list: Vec<(String,V
 }
 
 fn run_cmd(cmd: &str, args: Option<Vec<&str>>) -> anyhow::Result<Output> {
+    let command = format!("{}, {:?}", &cmd, &args);
     let mut exit_output = Command::new(cmd);
     if let Some(args) = args {
         exit_output.args(args);
     }
     let exit_output = exit_output.output();
-    debug!("run_cmd: cmd: {}, output: {:?}",cmd, exit_output);
-    Ok(exit_output?)
+    if let Ok(false) = exit_output.as_ref().map(|x| x.status.success()){
+        error!("run_cmd: cmd: {}, output: {:?}",cmd, exit_output);
+    }else {
+        debug!("run_cmd: cmd: {}, output: {:?}",cmd, exit_output);
+    }
+    Ok(exit_output.map_err(|err| anyhow::anyhow!("{}, command: {}",err.to_string(),command))?)
 }
 
 pub fn get_supported_blockchains() -> HashMap<String, SupportedBlockchain> {
     (*SUPPORTED_BLOCKCHAINS).clone()
 }
 
-// refresh_rate in seconds
+// pull_interval in seconds
 pub async fn get_supported_blockchains_from_chain_registry(
-    path: String,
+    git_path: &str,
     git_pull: bool,
-    chain_registry_refresh_rate: Option<u64>,
-) -> HashMap<String, SupportedBlockchain> {
+    json_path: &str,
+    sync_interval_in_secs: Option<u64>,
+) -> anyhow::Result<HashMap<String, SupportedBlockchain>> {
     if git_pull {
         let mut update: bool = false;
-        if let Some(refresh_rate) = chain_registry_refresh_rate {
-            let path = format!("{}/.git/FETCH_HEAD", &path);
+        if let Some(pull_interval) = sync_interval_in_secs {
+            let path = format!("{}/.git/FETCH_HEAD", git_path);
             //println!("{}",&path);
-            let date_git_fetch_head = run_cmd("date", Some(vec!["+%s", "-r", path.as_str()]));
-            let date_system = run_cmd("date", Some(vec!["+%s"]));
-            match (date_git_fetch_head, date_system) {
-                (Ok(date_git_fetch_head), Ok(date_system)) => {
-                    let d1: u64 = String::from_utf8_lossy(&date_git_fetch_head.stdout)
-                        .to_string()
-                        .replace("\n", "")
-                        .parse()
-                        .unwrap_or(0);
-                    let d2: u64 = String::from_utf8_lossy(&date_system.stdout)
-                        .to_string()
-                        .replace("\n", "")
-                        .parse()
-                        .unwrap_or(0);
-                    if d2 - d1 >= refresh_rate {
-                        update = true;
-                    }
-                }
-                _ => {}
+            let date_git_fetch_head = run_cmd("date", Some(vec!["+%s", "-r", path.as_str()]))?;
+            let date_system = run_cmd("date", Some(vec!["+%s"]))?;
+            let d1: u64 = String::from_utf8_lossy(&date_git_fetch_head.stdout)
+                .to_string()
+                .replace("\n", "")
+                .parse()
+                .unwrap_or(0);
+            let d2: u64 = String::from_utf8_lossy(&date_system.stdout)
+                .to_string()
+                .replace("\n", "")
+                .parse()
+                .unwrap_or(0);
+            if d2 - d1 >= pull_interval {
+                update = true;
             }
         } else {
             update = true;
         }
         if update {
-            run_cmd("ls", Some(vec!["-a"])).ok();
-            match run_cmd("git", Some(vec!["-C", path.as_str(), "pull"])) {
-                Ok(_) => {
-                    info!("git pull successful for {}",&path);
-                },
-                Err(e) => {
-                    error!("git pull failed for {}: {:?}",&path,e);
-                },
-            };
+            run_cmd("ls", Some(vec!["-a"]))?;
+            run_cmd("git", Some(vec!["-C", git_path, "pull"]))?;
         }
     }
 
+    let data = std::fs::read_to_string(json_path).map_err(|err| anyhow::anyhow!("{}, File: {}",err.to_string(), json_path))?;
     let mut supported_blockchains: HashMap<String, SupportedBlockchain> =
-        get_supported_blockchains();
+        serde_json::from_str(&data).map_err(|err| anyhow::anyhow!("{}, File: {}",err.to_string(), json_path))?;
 
     let mut list: Vec<(String,Vec<String>)> = Vec::new();
 
     for (k, v) in supported_blockchains.iter() {
-        let file = File::open(format!("{}/{}/chain.json", &path, k).as_str()).unwrap();
+        let chain_json = format!("{}/{}/chain.json", &git_path, k);
+        let file = File::open(&chain_json).map_err(|err| anyhow::anyhow!("{}, File: {}",err.to_string(), chain_json))?;
         let reader = BufReader::new(file);
-        let chain_info: chain_registry::chain::ChainInfo = serde_json::from_reader(reader).unwrap();
+        let chain_info: chain_registry::chain::ChainInfo = serde_json::from_reader(reader)?;
 
         let mut try_these_grpc_urls: Vec<String> = chain_info
             .apis
@@ -314,7 +311,7 @@ pub async fn get_supported_blockchains_from_chain_registry(
     }
 
     info!("Got Supported Blockchains from Chain-Registry!");
-    supported_blockchains
+    Ok(supported_blockchains)
 }
 
 #[cfg(test)]

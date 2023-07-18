@@ -154,11 +154,12 @@ pub fn sign_doc(
 
 pub async fn simulate_tx(tx_bytes: Vec<u8>) -> anyhow::Result<()> {
     let _channel = channels::get_supported_blockchains_from_chain_registry(
-        "./packages/chain-registry".to_string(),
+        "./packages/chain-registry",
         true,
+        "./tmp/supported_blockchains.json",
         None,
     )
-    .await
+    .await?
     .get("terra2")
     .unwrap()
     .channel()
@@ -218,11 +219,12 @@ pub async fn pipes() -> anyhow::Result<()> {
 
 pub async fn msg_send() -> anyhow::Result<()> {
     let _channel = channels::get_supported_blockchains_from_chain_registry(
-        "./packages/chain-registry".to_string(),
+        "./packages/chain-registry",
         true,
+        "./tmp/supported_blockchains.json",
         None,
     )
-    .await
+    .await?
     .get("terra2")
     .unwrap()
     .channel()

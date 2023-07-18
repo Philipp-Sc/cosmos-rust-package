@@ -30,7 +30,7 @@ use crate::api::custom::types::gov::tally_ext::TallyHelper;
 use crate::api::custom::types::ProtoMessageWrapper;
 
 
-#[derive(Deserialize, Serialize, strum_macros::Display, Debug, Clone, PartialEq, EnumIter, Hash)]
+#[derive(Deserialize, Serialize, strum_macros::Display, Debug, Clone, Eq, PartialEq, EnumIter, Hash)]
 pub enum ProposalStatus {
     /*
     StatusNil           ProposalStatus = 0x00
