@@ -16,7 +16,6 @@ mod test {
 
     use super::*;
     use crate::api::core::cosmos::channels::GRPC_Service;
-    use crate::api::custom::types::ProtoMessageWrapper;
 
     #[tokio::test]
     async fn test_get_pool_function() {
@@ -25,9 +24,10 @@ mod test {
             name: "osmosis".to_string(),
             prefix: "osmo".to_string(),
             grpc_service: GRPC_Service {
-                grpc_url: Some("https://osmosis-grpc.lavenderfive.com:443".to_string()),
+                grpc_urls: vec!["https://osmosis-grpc.lavenderfive.com:443".to_string()],
                 error: None,
             },
+            rank: 1,
             governance_proposals_link: "".to_string(),
         };
         let result = get_pool(supported_blockchain).await;

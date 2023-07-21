@@ -17,8 +17,6 @@ use tokio::task::JoinSet;
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
 
-
-
 lazy_static! {
     static ref SUPPORTED_BLOCKCHAINS: HashMap<String, SupportedBlockchain> = {
         let data = std::fs::read_to_string("./tmp/supported_blockchains.json")
@@ -30,7 +28,6 @@ lazy_static! {
 }
 
 pub type SupportedBlockchainType = HashMap<String, SupportedBlockchain>;
-
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct SupportedBlockchain {
@@ -348,8 +345,13 @@ mod test {
     async fn test_get_supported_blockchains_from_chain_registrys_function() {
         let path = "../chain-registry";
 
-        let result =
-            get_supported_blockchains_from_chain_registry(path.to_string(), true, None).await;
+        let result = get_supported_blockchains_from_chain_registry(
+            path,
+            true,
+            "./tmp/supported_blockchains.json",
+            None,
+        )
+        .await;
         println!("{:?}", result);
     }
 }

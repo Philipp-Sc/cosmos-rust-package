@@ -12,7 +12,6 @@ use crate::api::custom::types::gov::tally_ext::TallyResultExt;
 use crate::api::custom::types::staking::pool_ext::PoolExt;
 use crate::api::custom::types::staking::validators_ext::ValidatorsExt;
 
-
 pub type GovernanceProposalsType = Vec<ProposalExt>;
 pub type ParamsType = ParamsExt;
 pub type NextKeyType = Option<Vec<u8>>;
@@ -75,4 +74,3 @@ where
         bytes.hash(state);
     }
 }
-

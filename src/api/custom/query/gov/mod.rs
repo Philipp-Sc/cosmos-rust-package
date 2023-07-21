@@ -3,16 +3,12 @@ use crate::api::core::*;
 
 use std::string::ToString;
 
-use lazy_static::lazy_static;
-use regex::Regex;
-
 use cosmos_sdk_proto::cosmos::base::query::v1beta1::PageRequest;
 
 use crate::api::custom::types::gov::params_ext::ParamsExt;
 use crate::api::custom::types::gov::proposal_ext::{ProposalExt, ProposalStatus};
 use crate::api::custom::types::gov::tally_ext::TallyResultExt;
 use crate::api::custom::types::staking::validators_ext::ValidatorsExt;
-
 
 pub async fn get_validators(
     blockchain: SupportedBlockchain,
@@ -104,7 +100,6 @@ mod test {
 
     use super::*;
     use crate::api::core::cosmos::channels::GRPC_Service;
-    use crate::api::custom::types::ProtoMessageWrapper;
 
     #[tokio::test]
     async fn test_get_proposals_function() {
@@ -113,14 +108,15 @@ mod test {
             name: "osmosis".to_string(),
             prefix: "osmo".to_string(),
             grpc_service: GRPC_Service {
-                grpc_url: Some("https://osmosis-grpc.lavenderfive.com:443".to_string()),
+                grpc_urls: vec!["https://osmosis-grpc.lavenderfive.com:443".to_string()],
                 error: None,
             },
+            rank: 1,
             governance_proposals_link: "".to_string(),
         };
         let result = get_proposals(supported_blockchain, ProposalStatus::StatusPassed, None).await;
         assert!(result.is_ok());
-        for mut each in result.unwrap().1 {
+        for each in result.unwrap().1 {
             println!("Decoded Proposal:\n{:?}", each.proposal);
             println!("Decoded Proposal Content:\n{:?}", each.content_opt());
 
