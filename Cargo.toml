@@ -35,7 +35,6 @@ rand = "0.8.5"
 thiserror = { version = "1.0.21" }
 eyre = "0.6"
 lazy_static = { version = "1.4.0"}
-linkify = { version = "0.10.0" }
 num-format = "0.4.4"
 
 [features]

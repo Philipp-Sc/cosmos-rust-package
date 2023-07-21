@@ -8,24 +8,11 @@ use regex::Regex;
 
 use cosmos_sdk_proto::cosmos::base::query::v1beta1::PageRequest;
 
-use linkify::LinkFinder;
-
 use crate::api::custom::types::gov::params_ext::ParamsExt;
 use crate::api::custom::types::gov::proposal_ext::{ProposalExt, ProposalStatus};
 use crate::api::custom::types::gov::tally_ext::TallyResultExt;
 use crate::api::custom::types::staking::validators_ext::ValidatorsExt;
 
-lazy_static! {
-    pub static ref LINK_FINDER: LinkFinder = get_link_finder();
-    pub static ref LINK_MARKDOWN_REGEX: regex::Regex =
-        Regex::new(r#"\[([^\]]+)\]\(([^\)"]+)\)"#).unwrap();
-}
-
-pub fn get_link_finder() -> LinkFinder {
-    let mut finder = LinkFinder::new();
-    finder.url_must_have_scheme(false);
-    finder
-}
 
 pub async fn get_validators(
     blockchain: SupportedBlockchain,
