@@ -13,26 +13,25 @@ use strum_macros::EnumIter;
 
 use chrono::NaiveDateTime;
 use chrono::{DateTime, Utc};
-use cosmos_sdk_proto::cosmos::gov::v1::TallyResult;
 
 use serde::{Deserialize, Serialize};
 
 use cosmos_sdk_proto::prost::Message;
 
-use crate::api::custom::types::gov::tally_ext::TallyHelper;
+use crate::api::custom::types::gov::tally_v1beta1_ext::TallyHelper;
 use crate::api::custom::types::ProtoMessageWrapper;
 
 #[derive(
     Deserialize, Serialize, strum_macros::Display, Debug, Clone, Eq, PartialEq, EnumIter, Hash,
 )]
-pub enum ProposalStatus {
+pub enum ProposalStatusV1Beta1 {
     /*
-    StatusNil           ProposalStatus = 0x00
-    StatusDepositPeriod ProposalStatus = 0x01  // Proposal is submitted. Participants can deposit on it but not vote
-    StatusVotingPeriod  ProposalStatus = 0x02  // MinDeposit is reached, participants can vote
-    StatusPassed        ProposalStatus = 0x03  // Proposal passed and successfully executed
-    StatusRejected      ProposalStatus = 0x04  // Proposal has been rejected
-    StatusFailed        ProposalStatus = 0x05  // Proposal passed but failed execution
+    StatusNil           ProposalStatusV1Beta = 0x00
+    StatusDepositPeriod ProposalStatusV1Beta = 0x01  // Proposal is submitted. Participants can deposit on it but not vote
+    StatusVotingPeriod  ProposalStatusV1Beta = 0x02  // MinDeposit is reached, participants can vote
+    StatusPassed        ProposalStatusV1Beta = 0x03  // Proposal passed and successfully executed
+    StatusRejected      ProposalStatusV1Beta = 0x04  // Proposal has been rejected
+    StatusFailed        ProposalStatusV1Beta = 0x05  // Proposal passed but failed execution
     */
     StatusNil = 0x00,
     StatusDepositPeriod = 0x01,
@@ -40,12 +39,6 @@ pub enum ProposalStatus {
     StatusPassed = 0x03,
     StatusRejected = 0x04,
     StatusFailed = 0x05,
-}
-
-impl From<ProposalStatus> for i32 {
-    fn from(status: ProposalStatus) -> i32 {
-        status as i32
-    }
 }
 
 #[derive(Deserialize, Serialize, strum_macros::Display, Debug, Clone, PartialEq, EnumIter)]
@@ -57,26 +50,26 @@ pub enum ProposalTime {
     LatestTime,
 }
 
-impl ProposalStatus {
-    pub fn new(name: &str) -> ProposalStatus {
+impl ProposalStatusV1Beta1 {
+    pub fn new(name: &str) -> ProposalStatusV1Beta1 {
         match name {
-            "nil" => ProposalStatus::StatusNil,
-            "passed" => ProposalStatus::StatusPassed,
-            "failed" => ProposalStatus::StatusFailed,
-            "rejected" => ProposalStatus::StatusRejected,
-            "deposit_period" => ProposalStatus::StatusDepositPeriod,
-            "voting_period" => ProposalStatus::StatusVotingPeriod,
+            "nil" => ProposalStatusV1Beta1::StatusNil,
+            "passed" => ProposalStatusV1Beta1::StatusPassed,
+            "failed" => ProposalStatusV1Beta1::StatusFailed,
+            "rejected" => ProposalStatusV1Beta1::StatusRejected,
+            "deposit_period" => ProposalStatusV1Beta1::StatusDepositPeriod,
+            "voting_period" => ProposalStatusV1Beta1::StatusVotingPeriod,
             _ => panic!(),
         }
     }
     pub fn to_icon(&self) -> String {
         match self {
-            ProposalStatus::StatusNil => "⚪".to_string(),
-            ProposalStatus::StatusPassed => "🟢".to_string(),
-            ProposalStatus::StatusFailed => "❌".to_string(),
-            ProposalStatus::StatusRejected => "🔴".to_string(),
-            ProposalStatus::StatusVotingPeriod => "🗳".to_string(),
-            ProposalStatus::StatusDepositPeriod => "💰".to_string(),
+            ProposalStatusV1Beta1::StatusNil => "⚪".to_string(),
+            ProposalStatusV1Beta1::StatusPassed => "🟢".to_string(),
+            ProposalStatusV1Beta1::StatusFailed => "❌".to_string(),
+            ProposalStatusV1Beta1::StatusRejected => "🔴".to_string(),
+            ProposalStatusV1Beta1::StatusVotingPeriod => "🗳".to_string(),
+            ProposalStatusV1Beta1::StatusDepositPeriod => "💰".to_string(),
         }
     }
 }
@@ -127,17 +120,17 @@ pub enum ProposalContent {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Hash)]
-pub struct ProposalExt {
+pub struct ProposalV1Beta1Ext {
     pub blockchain: SupportedBlockchain,
-    pub status: ProposalStatus,
-    pub proposal: ProtoMessageWrapper<cosmos_sdk_proto::cosmos::gov::v1::Proposal>,
+    pub status: ProposalStatusV1Beta1,
+    pub proposal: ProtoMessageWrapper<cosmos_sdk_proto::cosmos::gov::v1beta1::Proposal>,
 }
 
-impl ProposalExt {
+impl ProposalV1Beta1Ext {
     pub fn new(
         blockchain: &SupportedBlockchain,
-        proposal_status: &ProposalStatus,
-        proposal: cosmos_sdk_proto::cosmos::gov::v1::Proposal,
+        proposal_status: &ProposalStatusV1Beta1,
+        proposal: cosmos_sdk_proto::cosmos::gov::v1beta1::Proposal,
     ) -> Self {
         Self {
             blockchain: blockchain.clone(),
@@ -146,45 +139,18 @@ impl ProposalExt {
         }
     }
 
-    pub fn from_v1beta1(
-        blockchain: &SupportedBlockchain,
-        proposal_status: &ProposalStatus,
-        proposal: cosmos_sdk_proto::cosmos::gov::v1beta1::Proposal,
-    ) -> Self {
-        Self {
-            blockchain: blockchain.clone(),
-            status: proposal_status.clone(),
-            proposal: ProtoMessageWrapper(cosmos_sdk_proto::cosmos::gov::v1::Proposal {
-                id: proposal.proposal_id,
-                messages: proposal.content.map(|msg| {vec![msg]}).unwrap_or(vec![]),
-                status: proposal.status,
-                final_tally_result: proposal.final_tally_result.map(|tally| TallyResult {
-                    yes_count: tally.yes,
-                    abstain_count: tally.abstain,
-                    no_count: tally.no,
-                    no_with_veto_count: tally.no_with_veto,
-                }),
-                submit_time: proposal.submit_time,
-                deposit_end_time: proposal.deposit_end_time,
-                total_deposit: proposal.total_deposit,
-                voting_start_time: proposal.voting_start_time,
-                voting_end_time: proposal.voting_end_time,
-                metadata: "".to_string(),
-            }),
-        }
-    }
-
     pub fn object_to_hash(&self) -> u64 {
         let mut s = DefaultHasher::new();
         &self.hash(&mut s);
         s.finish()
     }
-    pub fn messages_as_proposal_content(&self) -> Vec<ProposalContent> {
+    pub fn content_opt(&self) -> Option<ProposalContent> {
         let proposal_content = self
             .proposal
             .0
-            .messages.iter()
-            .map(|any| Self::content(&any)).collect();
+            .content
+            .as_ref()
+            .map(|any| Self::content(&any));
         proposal_content
     }
 
@@ -279,118 +245,118 @@ impl ProposalExt {
     }
 
     pub fn is_in_deposit_period(&self) -> bool {
-        self.status == ProposalStatus::StatusDepositPeriod
+        self.status == ProposalStatusV1Beta1::StatusDepositPeriod
     }
 
     pub fn get_timestamp_based_on_proposal_status(&self) -> &Option<Timestamp> {
         match self.status {
-            ProposalStatus::StatusNil | ProposalStatus::StatusDepositPeriod => {
+            ProposalStatusV1Beta1::StatusNil | ProposalStatusV1Beta1::StatusDepositPeriod => {
                 &self.proposal.0.submit_time
             }
-            ProposalStatus::StatusVotingPeriod => &self.proposal.0.voting_start_time,
-            ProposalStatus::StatusPassed
-            | ProposalStatus::StatusFailed
-            | ProposalStatus::StatusRejected => &self.proposal.0.voting_end_time,
+            ProposalStatusV1Beta1::StatusVotingPeriod => &self.proposal.0.voting_start_time,
+            ProposalStatusV1Beta1::StatusPassed
+            | ProposalStatusV1Beta1::StatusFailed
+            | ProposalStatusV1Beta1::StatusRejected => &self.proposal.0.voting_end_time,
         }
     }
 
     pub fn get_description(&self) -> String {
-        self.messages_as_proposal_content().iter().map(|msg| {
-            match msg {
-                ProposalContent::TextProposal(Some(p)) => {
-                    p.description.to_owned()
-                }
-                ProposalContent::CommunityPoolSpendProposal(Some(p)) => {
-                    p.description.to_owned()
-                }
-                ProposalContent::ParameterChangeProposal(Some(p)) => {
-                    p.description.to_owned()
-                }
-                ProposalContent::SoftwareUpgradeProposal(Some(p)) => {
-                    p.description.to_owned()
-                }
-                ProposalContent::ClientUpdateProposal(Some(p)) => {
-                    p.description.to_owned()
-                }
-                ProposalContent::UpdatePoolIncentivesProposal(Some(p)) => {
-                    p.description.to_owned()
-                }
-                ProposalContent::StoreCodeProposal(Some(p)) => {
-                    p.description.to_owned()
-                }
-                ProposalContent::RemoveSuperfluidAssetsProposal(Some(p)) => {
-                    p.description.to_owned()
-                }
-                ProposalContent::InstantiateContractProposal(Some(p)) => {
-                    p.description.to_owned()
-                }
-                ProposalContent::ReplacePoolIncentivesProposal(Some(p)) => {
-                    p.description.to_owned()
-                }
-                ProposalContent::SetSuperfluidAssetsProposal(Some(p)) => {
-                    p.description.to_owned()
-                }
-                ProposalContent::UpdateFeeTokenProposal(Some(p)) => {
-                    p.description.to_owned()
-                }
-                ProposalContent::MigrateContractProposal(Some(p)) => {
-                    p.description.to_owned()
-                }
-                ProposalContent::UpdateInstantiateConfigProposal(Some(p)) => {
-                    p.description.to_owned()
-                }
-                ProposalContent::SudoContractProposal(Some(p)) => {
-                    p.description.to_owned()
-                }
-                ProposalContent::ExecuteContractProposal(Some(p)) => {
-                    p.description.to_owned()
-                }
-                ProposalContent::UpdateAdminProposal(Some(p)) => {
-                    p.description.to_owned()
-                }
-                ProposalContent::ClearAdminProposal(Some(p)) => {
-                    p.description.to_owned()
-                }
-                ProposalContent::UnpinCodesProposal(Some(p)) => {
-                    p.description.to_owned()
-                }
-                ProposalContent::UnknownProposalType(type_url) =>
-                    format!("Error: UnknownProposalTypeError: ProposalContent can not be decoded for unknown ProposalType.\n\nType URL:\n{}", type_url)
-                ,
-                proposal_content =>
-                    format!("Error: ProposalContentDecodeError: Failed to decode ProposalContent: {}",proposal_content)
-                ,
-            }.replace("\\n","\n")
-        }).collect::<Vec<String>>().join("\n")
+        match &self.content_opt() {
+            Some(ProposalContent::TextProposal(Some(p))) => {
+                p.description.to_owned()
+            }
+            Some(ProposalContent::CommunityPoolSpendProposal(Some(p))) => {
+                p.description.to_owned()
+            }
+            Some(ProposalContent::ParameterChangeProposal(Some(p))) => {
+                p.description.to_owned()
+            }
+            Some(ProposalContent::SoftwareUpgradeProposal(Some(p))) => {
+                p.description.to_owned()
+            }
+            Some(ProposalContent::ClientUpdateProposal(Some(p))) => {
+                p.description.to_owned()
+            }
+            Some(ProposalContent::UpdatePoolIncentivesProposal(Some(p))) => {
+                p.description.to_owned()
+            }
+            Some(ProposalContent::StoreCodeProposal(Some(p))) => {
+                p.description.to_owned()
+            }
+            Some(ProposalContent::RemoveSuperfluidAssetsProposal(Some(p))) => {
+                p.description.to_owned()
+            }
+            Some(ProposalContent::InstantiateContractProposal(Some(p))) => {
+                p.description.to_owned()
+            }
+            Some(ProposalContent::ReplacePoolIncentivesProposal(Some(p))) => {
+                p.description.to_owned()
+            }
+            Some(ProposalContent::SetSuperfluidAssetsProposal(Some(p))) => {
+                p.description.to_owned()
+            }
+            Some(ProposalContent::UpdateFeeTokenProposal(Some(p))) => {
+                p.description.to_owned()
+            }
+            Some(ProposalContent::MigrateContractProposal(Some(p))) => {
+                p.description.to_owned()
+            }
+            Some(ProposalContent::UpdateInstantiateConfigProposal(Some(p))) => {
+                p.description.to_owned()
+            }
+            Some(ProposalContent::SudoContractProposal(Some(p))) => {
+                p.description.to_owned()
+            }
+            Some(ProposalContent::ExecuteContractProposal(Some(p))) => {
+                p.description.to_owned()
+            }
+            Some(ProposalContent::UpdateAdminProposal(Some(p))) => {
+                p.description.to_owned()
+            }
+            Some(ProposalContent::ClearAdminProposal(Some(p))) => {
+                p.description.to_owned()
+            }
+            Some(ProposalContent::UnpinCodesProposal(Some(p))) => {
+                p.description.to_owned()
+            }
+            Some(ProposalContent::UnknownProposalType(type_url)) =>
+                format!("Error: UnknownProposalTypeError: ProposalContent can not be decoded for unknown ProposalType.\n\nType URL:\n{}", type_url)
+            ,
+            Some(proposal_content) =>
+                format!("Error: ProposalContentDecodeError: Failed to decode ProposalContent: {}",proposal_content)
+            ,
+            None =>
+                "Error: ProposalDecodeError: Failed to decode Proposal.".to_string()
+            ,
+        }.replace("\\n","\n")
     }
     pub fn get_title(&self) -> String {
-        self.messages_as_proposal_content().iter().map(|msg| {
-            match msg {
-                ProposalContent::TextProposal(Some(p)) => p.title.to_owned(),
-                ProposalContent::CommunityPoolSpendProposal(Some(p)) => p.title.to_owned(),
-                ProposalContent::ParameterChangeProposal(Some(p)) => p.title.to_owned(),
-                ProposalContent::SoftwareUpgradeProposal(Some(p)) => p.title.to_owned(),
-                ProposalContent::ClientUpdateProposal(Some(p)) => p.title.to_owned(),
-                ProposalContent::UpdatePoolIncentivesProposal(Some(p)) => p.title.to_owned(),
-                ProposalContent::StoreCodeProposal(Some(p)) => p.title.to_owned(),
-                ProposalContent::RemoveSuperfluidAssetsProposal(Some(p)) => p.title.to_owned(),
-                ProposalContent::InstantiateContractProposal(Some(p)) => p.title.to_owned(),
-                ProposalContent::ReplacePoolIncentivesProposal(Some(p)) => p.title.to_owned(),
-                ProposalContent::SetSuperfluidAssetsProposal(Some(p)) => p.title.to_owned(),
-                ProposalContent::UpdateFeeTokenProposal(Some(p)) => p.title.to_owned(),
-                ProposalContent::MigrateContractProposal(Some(p)) => p.title.to_owned(),
-                ProposalContent::UpdateInstantiateConfigProposal(Some(p)) => p.title.to_owned(),
-                ProposalContent::SudoContractProposal(Some(p)) => p.title.to_owned(),
-                ProposalContent::ExecuteContractProposal(Some(p)) => p.title.to_owned(),
-                ProposalContent::UpdateAdminProposal(Some(p)) => p.title.to_owned(),
-                ProposalContent::ClearAdminProposal(Some(p)) => p.title.to_owned(),
-                ProposalContent::UnpinCodesProposal(Some(p)) => p.title.to_owned(),
-                ProposalContent::UnknownProposalType(_type_url) => {
-                    "UnknownProposalTypeError".to_string()
-                }
-                _ => "ProposalContentDecodeError".to_string(),
+        match &self.content_opt() {
+            Some(ProposalContent::TextProposal(Some(p))) => p.title.to_owned(),
+            Some(ProposalContent::CommunityPoolSpendProposal(Some(p))) => p.title.to_owned(),
+            Some(ProposalContent::ParameterChangeProposal(Some(p))) => p.title.to_owned(),
+            Some(ProposalContent::SoftwareUpgradeProposal(Some(p))) => p.title.to_owned(),
+            Some(ProposalContent::ClientUpdateProposal(Some(p))) => p.title.to_owned(),
+            Some(ProposalContent::UpdatePoolIncentivesProposal(Some(p))) => p.title.to_owned(),
+            Some(ProposalContent::StoreCodeProposal(Some(p))) => p.title.to_owned(),
+            Some(ProposalContent::RemoveSuperfluidAssetsProposal(Some(p))) => p.title.to_owned(),
+            Some(ProposalContent::InstantiateContractProposal(Some(p))) => p.title.to_owned(),
+            Some(ProposalContent::ReplacePoolIncentivesProposal(Some(p))) => p.title.to_owned(),
+            Some(ProposalContent::SetSuperfluidAssetsProposal(Some(p))) => p.title.to_owned(),
+            Some(ProposalContent::UpdateFeeTokenProposal(Some(p))) => p.title.to_owned(),
+            Some(ProposalContent::MigrateContractProposal(Some(p))) => p.title.to_owned(),
+            Some(ProposalContent::UpdateInstantiateConfigProposal(Some(p))) => p.title.to_owned(),
+            Some(ProposalContent::SudoContractProposal(Some(p))) => p.title.to_owned(),
+            Some(ProposalContent::ExecuteContractProposal(Some(p))) => p.title.to_owned(),
+            Some(ProposalContent::UpdateAdminProposal(Some(p))) => p.title.to_owned(),
+            Some(ProposalContent::ClearAdminProposal(Some(p))) => p.title.to_owned(),
+            Some(ProposalContent::UnpinCodesProposal(Some(p))) => p.title.to_owned(),
+            Some(ProposalContent::UnknownProposalType(_type_url)) => {
+                "UnknownProposalTypeError".to_string()
             }
-        }).collect::<Vec<String>>().join("\n")
+            Some(_) => "ProposalContentDecodeError".to_string(),
+            None => "ProposalDecodeError".to_string(),
+        }
     }
 
     pub fn proposal_preview_msg(&self, fraud_classification: Option<f64>) -> String {
@@ -401,9 +367,9 @@ impl ProposalExt {
         let mut display = format!(
             "{}\n\n{}\n#{}  -  {}\n{}",
             &self.blockchain.display,
-            self.messages_as_proposal_content().iter()
+            self.content_opt()
                 .map(|x| x.to_string())
-                .collect::<Vec<String>>().join("\n"),
+                .unwrap_or("Proposal".to_string()),
             proposal_id,
             &self.status.to_icon(),
             title,
@@ -501,9 +467,9 @@ impl ProposalExt {
             .final_tally_result
             .clone()
             .map(|y| {
-                let no_with_veto = y.no_with_veto_count.parse::<f64>().unwrap_or(0f64);
-                let yes = y.yes_count.parse::<f64>().unwrap_or(0f64);
-                let no = y.no_count.parse::<f64>().unwrap_or(0f64);
+                let no_with_veto = y.no_with_veto.parse::<f64>().unwrap_or(0f64);
+                let yes = y.yes.parse::<f64>().unwrap_or(0f64);
+                let no = y.no.parse::<f64>().unwrap_or(0f64);
                 no_with_veto > yes && no_with_veto > no
             })
             .unwrap_or(false)
@@ -519,7 +485,7 @@ impl ProposalExt {
     }
 
     pub fn get_proposal_id(&self) -> u64 {
-        self.proposal.0.id
+        self.proposal.0.proposal_id
     }
 
     pub fn governance_proposal_link(&self) -> String {
@@ -551,7 +517,7 @@ impl ProposalExt {
         let tally_result = self.get_final_tally_result();
 
         let mut voting_state = "".to_string();
-        if &self.status == &ProposalStatus::StatusVotingPeriod {
+        if &self.status == &ProposalStatusV1Beta1::StatusVotingPeriod {
             let mut voting_start = false;
             if let Some(time) = &proposal.voting_start_time {
                 match DateTime::<Utc>::from_utc(
@@ -590,7 +556,7 @@ impl ProposalExt {
                 (false, false) => format!("Voting starts at {}\n\n", voting_start_text),
                 (false, true) => format!("Voting ended before it started!\n\n"),
             };
-        } else if &self.status == &ProposalStatus::StatusDepositPeriod {
+        } else if &self.status == &ProposalStatusV1Beta1::StatusDepositPeriod {
             voting_state = format!("You can help the proposal move forward by depositing now. \nThe deposit period is open until {}\n\n",Self::timestamp_to_string(proposal.deposit_end_time.clone()))
         }
 

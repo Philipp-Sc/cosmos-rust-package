@@ -29,7 +29,7 @@ lazy_static! {
 
 pub type SupportedBlockchainType = HashMap<String, SupportedBlockchain>;
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SupportedBlockchain {
     pub rank: u32,
     pub display: String,
@@ -37,6 +37,13 @@ pub struct SupportedBlockchain {
     pub prefix: String,
     pub grpc_service: GRPC_Service,
     pub governance_proposals_link: String,
+}
+
+impl PartialEq for SupportedBlockchain {
+    fn eq(&self, other: &Self) -> bool {
+            self.name == other.name &&
+            self.prefix == other.prefix
+    }
 }
 
 impl Hash for SupportedBlockchain {
@@ -52,9 +59,9 @@ pub struct GRPC_Service {
 }
 
 impl SupportedBlockchain {
-    pub async fn channel(&self) -> anyhow::Result<Channel> {
+    pub async fn channel(&self) -> Result<Channel, tonic::Status> {
         match &self.grpc_service.error {
-            Some(err) => Err(anyhow::anyhow!(format!(
+            Some(err) => Err(tonic::Status::failed_precondition(format!(
                 "Error: {} is not a supported cosmos blockchain: {}",
                 self.name,
                 err.to_string()
@@ -64,7 +71,7 @@ impl SupportedBlockchain {
                     self.grpc_service.grpc_urls.choose(&mut rand::thread_rng());
                 match selected_grpc_service {
                     Some(grpc_service) => get_channel(grpc_service.to_owned()).await,
-                    None => Err(anyhow::anyhow!(format!(
+                    None => Err(tonic::Status::cancelled(format!(
                         "Error: {} is not a supported cosmos blockchain: Error: Missing GRPC URL!",
                         self.name,
                     ))),
@@ -74,7 +81,7 @@ impl SupportedBlockchain {
     }
 }
 
-async fn get_channel(grpc_url: String) -> anyhow::Result<Channel> {
+async fn get_channel(grpc_url: String) -> Result<Channel, tonic::Status> {
     let endpoint =
         tonic::transport::Endpoint::new(grpc_url.parse::<tonic::transport::Uri>().unwrap())
             .unwrap()
@@ -82,7 +89,7 @@ async fn get_channel(grpc_url: String) -> anyhow::Result<Channel> {
             .connect_timeout(std::time::Duration::from_secs(60));
     match endpoint.connect().await {
         Ok(result) => Ok(result),
-        Err(err) => Err(anyhow::anyhow!(err)),
+        Err(err) => Err(tonic::Status::aborted(err.to_string())),
     }
 }
 

@@ -4,16 +4,19 @@ use crate::api::core::*;
 use std::string::ToString;
 
 use cosmos_sdk_proto::cosmos::base::query::v1beta1::PageRequest;
+use tonic::{Code, Status};
 
 use crate::api::custom::types::gov::params_ext::ParamsExt;
 use crate::api::custom::types::gov::proposal_ext::{ProposalExt, ProposalStatus};
+use crate::api::custom::types::gov::proposal_v1beta1_ext::{ProposalV1Beta1Ext, ProposalStatusV1Beta1};
 use crate::api::custom::types::gov::tally_ext::TallyResultExt;
+use crate::api::custom::types::gov::tally_v1beta1_ext::TallyResultV1Beta1Ext;
 use crate::api::custom::types::staking::validators_ext::ValidatorsExt;
 
-pub async fn get_validators(
+pub async fn get_validators_v1beta1(
     blockchain: SupportedBlockchain,
     next_key: Option<Vec<u8>>,
-) -> anyhow::Result<ValidatorsExt> {
+) -> anyhow::Result<(Option<Vec<u8>>, Vec<ValidatorsExt>)> {
     let channel = blockchain.channel().await?;
     let res = cosmos::query::staking::get_validators(
         channel,
@@ -29,15 +32,20 @@ pub async fn get_validators(
         },
     )
     .await?;
-    Ok(ValidatorsExt::new(blockchain, res))
+
+    let mut list: Vec<ValidatorsExt> = Vec::new();
+    for validator in res.validators {
+        list.push(ValidatorsExt::new(&blockchain, validator));
+    }
+    Ok((res.pagination.map(|x| x.next_key), list))
 }
 
-pub async fn get_params(
+pub async fn get_params_v1beta1(
     blockchain: SupportedBlockchain,
     params_type: String,
 ) -> anyhow::Result<ParamsExt> {
     let channel = blockchain.channel().await?;
-    let res = cosmos::query::gov::get_params(
+    let res = cosmos::query::gov::get_params_v1beta1(
         channel,
         cosmos_sdk_proto::cosmos::gov::v1beta1::QueryParamsRequest {
             params_type: params_type.clone(),
@@ -47,26 +55,39 @@ pub async fn get_params(
     Ok(ParamsExt::new(blockchain, &params_type, res))
 }
 
-pub async fn get_tally(
+pub async fn get_tally_v1beta1(
     blockchain: SupportedBlockchain,
     proposal_id: u64,
-) -> anyhow::Result<TallyResultExt> {
+) -> anyhow::Result<TallyResultV1Beta1Ext> {
     let channel = blockchain.channel().await?;
-    let res = cosmos::query::gov::get_tally_result(
+    let res = cosmos::query::gov::get_tally_result_v1beta1(
         channel,
         cosmos_sdk_proto::cosmos::gov::v1beta1::QueryTallyResultRequest { proposal_id },
     )
     .await?;
+    Ok(TallyResultV1Beta1Ext::new(blockchain, proposal_id, res))
+}
+
+pub async fn get_tally_v1(
+    blockchain: SupportedBlockchain,
+    proposal_id: u64,
+) -> anyhow::Result<TallyResultExt> {
+    let channel = blockchain.channel().await?;
+    let res = cosmos::query::gov::get_tally_result_v1(
+        channel,
+        cosmos_sdk_proto::cosmos::gov::v1::QueryTallyResultRequest { proposal_id },
+    )
+        .await?;
     Ok(TallyResultExt::new(blockchain, proposal_id, res))
 }
 
-pub async fn get_proposals(
+pub async fn get_proposals_v1beta1(
     blockchain: SupportedBlockchain,
     proposal_status: ProposalStatus,
     next_key: Option<Vec<u8>>,
-) -> anyhow::Result<(Option<Vec<u8>>, Vec<ProposalExt>)> {
+) -> Result<(Option<Vec<u8>>, Vec<ProposalExt>), tonic::Status> {
     let channel = blockchain.channel().await?;
-    let res = cosmos::query::gov::get_proposals(
+    let res = cosmos::query::gov::get_proposals_v1beta1(
         channel,
         cosmos_sdk_proto::cosmos::gov::v1beta1::QueryProposalsRequest {
             proposal_status: proposal_status.clone() as i32,
@@ -85,10 +106,61 @@ pub async fn get_proposals(
 
     let mut list: Vec<ProposalExt> = Vec::new();
     for proposal in res.proposals {
+        list.push(ProposalExt::from_v1beta1(&blockchain, &proposal_status, proposal));
+    }
+    Ok((res.pagination.map(|x| x.next_key), list))
+}
+
+
+pub async fn get_proposals_v1(
+    blockchain: SupportedBlockchain,
+    proposal_status: ProposalStatus,
+    next_key: Option<Vec<u8>>,
+) -> Result<(Option<Vec<u8>>, Vec<ProposalExt>), tonic::Status> {
+    let channel = blockchain.channel().await?;
+    let res = cosmos::query::gov::get_proposals_v1(
+        channel,
+        cosmos_sdk_proto::cosmos::gov::v1::QueryProposalsRequest {
+            proposal_status: proposal_status.clone() as i32,
+            voter: "".to_string(),
+            depositor: "".to_string(),
+            pagination: Some(PageRequest {
+                key: next_key.unwrap_or(vec![]),
+                offset: 0,
+                limit: 0,
+                count_total: false,
+                reverse: false,
+            }),
+        },
+    )
+        .await?;
+
+    let mut list: Vec<ProposalExt> = Vec::new();
+    for proposal in res.proposals {
         list.push(ProposalExt::new(&blockchain, &proposal_status, proposal));
     }
-    //log::error!("you dropped this: {:?}",res.pagination);
     Ok((res.pagination.map(|x| x.next_key), list))
+}
+
+
+pub async fn get_proposals(
+    blockchain: SupportedBlockchain,
+    proposal_status: ProposalStatus,
+    next_key: Option<Vec<u8>>,
+) -> Result<(Option<Vec<u8>>, Vec<ProposalExt>),tonic::Status> {
+    let res = get_proposals_v1(blockchain.clone(), proposal_status.clone(), next_key.clone()).await;
+
+    if let Err(tonic_status) = &res {
+        match tonic_status.code() {
+            Code::Unimplemented | Code::Unknown | Code::Aborted | Code::Cancelled => {
+                let res = get_proposals_v1beta1(blockchain, proposal_status, next_key).await;
+                return res;
+            }
+            _ => {}
+        }
+    }
+    return res;
+
 }
 
 #[cfg(test)]

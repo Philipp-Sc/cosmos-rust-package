@@ -1,23 +1,41 @@
 use tonic::transport::Channel;
 
-use cosmos_sdk_proto::cosmos::gov::v1beta1::query_client::QueryClient;
-use cosmos_sdk_proto::cosmos::gov::v1beta1::{
+
+
+use cosmos_sdk_proto::cosmos::gov::v1::query_client::QueryClient;
+use cosmos_sdk_proto::cosmos::gov::v1::{
     QueryParamsRequest, QueryParamsResponse, QueryProposalsRequest, QueryProposalsResponse,
     QueryTallyResultRequest, QueryTallyResultResponse,
 };
+use cosmos_sdk_proto::cosmos::gov::v1beta1::query_client::QueryClient as QueryClientV1Beta1;
+use cosmos_sdk_proto::cosmos::gov::v1beta1::{
+    QueryParamsRequest as QueryParamsRequestV1Beta1, QueryParamsResponse as QueryParamsResponseV1Beta1, QueryProposalsRequest as QueryProposalsRequestV1Beta1, QueryProposalsResponse as QueryProposalsResponseV1Beta1,
+    QueryTallyResultRequest as QueryTallyResultRequestV1Beta1, QueryTallyResultResponse as QueryTallyResultResponseV1Beta1,
+};
 
-pub async fn get_params(
+pub async fn get_params_v1beta1(
     channel: Channel,
-    query_tally_params_request: QueryParamsRequest,
-) -> anyhow::Result<QueryParamsResponse> {
-    let res = QueryClient::new(channel)
+    query_tally_params_request: QueryParamsRequestV1Beta1,
+) -> anyhow::Result<QueryParamsResponseV1Beta1> {
+    let res = QueryClientV1Beta1::new(channel)
         .params(query_tally_params_request)
         .await?
         .into_inner();
     Ok(res)
 }
 
-pub async fn get_tally_result(
+pub async fn get_tally_result_v1beta1(
+    channel: Channel,
+    query_tally_result_request: QueryTallyResultRequestV1Beta1,
+) -> anyhow::Result<QueryTallyResultResponseV1Beta1> {
+    let res = QueryClientV1Beta1::new(channel)
+        .tally_result(query_tally_result_request)
+        .await?
+        .into_inner();
+    Ok(res)
+}
+
+pub async fn get_tally_result_v1(
     channel: Channel,
     query_tally_result_request: QueryTallyResultRequest,
 ) -> anyhow::Result<QueryTallyResultResponse> {
@@ -28,10 +46,22 @@ pub async fn get_tally_result(
     Ok(res)
 }
 
-pub async fn get_proposals(
+pub async fn get_proposals_v1beta1(
+    channel: Channel,
+    query_proposal_request: QueryProposalsRequestV1Beta1,
+) -> Result<QueryProposalsResponseV1Beta1, tonic::Status> {
+    let res = QueryClientV1Beta1::new(channel)
+        .proposals(query_proposal_request)
+        .await?
+        .into_inner();
+    Ok(res)
+}
+
+
+pub async fn get_proposals_v1(
     channel: Channel,
     query_proposal_request: QueryProposalsRequest,
-) -> anyhow::Result<QueryProposalsResponse> {
+) -> Result<QueryProposalsResponse, tonic::Status> {
     let res = QueryClient::new(channel)
         .proposals(query_proposal_request)
         .await?

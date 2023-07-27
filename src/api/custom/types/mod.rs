@@ -8,14 +8,14 @@ use std::hash::{Hash, Hasher};
 
 use crate::api::custom::types::gov::params_ext::ParamsExt;
 use crate::api::custom::types::gov::proposal_ext::ProposalExt;
-use crate::api::custom::types::gov::tally_ext::TallyResultExt;
+use crate::api::custom::types::gov::tally_v1beta1_ext::TallyResultV1Beta1Ext;
 use crate::api::custom::types::staking::pool_ext::PoolExt;
 use crate::api::custom::types::staking::validators_ext::ValidatorsExt;
 
 pub type GovernanceProposalsType = Vec<ProposalExt>;
 pub type ParamsType = ParamsExt;
 pub type NextKeyType = Option<Vec<u8>>;
-pub type TallyResultType = TallyResultExt;
+pub type TallyResultType = TallyResultV1Beta1Ext;
 pub type PoolType = PoolExt;
 pub type ValidatorsType = ValidatorsExt;
 
