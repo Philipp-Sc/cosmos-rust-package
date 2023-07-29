@@ -12,20 +12,12 @@ use std::io::BufReader;
 use log::{debug, error, info};
 use std::process::Command;
 use std::process::Output;
+use num_format::Locale::to;
 use tokio::task::JoinSet;
 
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
 
-lazy_static! {
-    static ref SUPPORTED_BLOCKCHAINS: HashMap<String, SupportedBlockchain> = {
-        let data = std::fs::read_to_string("./tmp/supported_blockchains.json")
-            .expect("Unable to read file");
-        let supported_blockchains: HashMap<String, SupportedBlockchain> =
-            serde_json::from_str(&data).expect("Unable to parse JSON");
-        supported_blockchains
-    };
-}
 
 pub type SupportedBlockchainType = HashMap<String, SupportedBlockchain>;
 
@@ -83,8 +75,8 @@ impl SupportedBlockchain {
 
 async fn get_channel(grpc_url: String) -> Result<Channel, tonic::Status> {
     let endpoint =
-        tonic::transport::Endpoint::new(grpc_url.parse::<tonic::transport::Uri>().unwrap())
-            .unwrap()
+        tonic::transport::Endpoint::new(grpc_url.parse::<tonic::transport::Uri>().map_err(|err| tonic::Status::failed_precondition(err.to_string()))?)
+            .map_err(|err| tonic::Status::cancelled(err.to_string()))?
             .timeout(std::time::Duration::from_secs(60))
             .connect_timeout(std::time::Duration::from_secs(60));
     match endpoint.connect().await {
@@ -223,10 +215,6 @@ fn run_cmd(cmd: &str, args: Option<Vec<&str>>) -> anyhow::Result<Output> {
         debug!("run_cmd: cmd: {}, output: {:?}", cmd, exit_output);
     }
     Ok(exit_output.map_err(|err| anyhow::anyhow!("{}, command: {}", err.to_string(), command))?)
-}
-
-pub fn get_supported_blockchains() -> HashMap<String, SupportedBlockchain> {
-    (*SUPPORTED_BLOCKCHAINS).clone()
 }
 
 // pull_interval in seconds

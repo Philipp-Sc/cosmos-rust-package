@@ -96,7 +96,7 @@ pub async fn get_proposals_v1beta1(
             pagination: Some(PageRequest {
                 key: next_key.unwrap_or(vec![]),
                 offset: 0,
-                limit: 0,
+                limit: 100,
                 count_total: false,
                 reverse: false,
             }),
@@ -127,7 +127,7 @@ pub async fn get_proposals_v1(
             pagination: Some(PageRequest {
                 key: next_key.unwrap_or(vec![]),
                 offset: 0,
-                limit: 0,
+                limit: 100,
                 count_total: false,
                 reverse: false,
             }),
