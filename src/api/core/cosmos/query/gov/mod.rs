@@ -5,11 +5,11 @@ use tonic::transport::Channel;
 use cosmos_sdk_proto::cosmos::gov::v1::query_client::QueryClient;
 use cosmos_sdk_proto::cosmos::gov::v1::{
     QueryParamsRequest, QueryParamsResponse, QueryProposalsRequest, QueryProposalsResponse,
-    QueryTallyResultRequest, QueryTallyResultResponse,
+    QueryTallyResultRequest, QueryTallyResultResponse, QueryProposalRequest, QueryProposalResponse
 };
 use cosmos_sdk_proto::cosmos::gov::v1beta1::query_client::QueryClient as QueryClientV1Beta1;
 use cosmos_sdk_proto::cosmos::gov::v1beta1::{
-    QueryParamsRequest as QueryParamsRequestV1Beta1, QueryParamsResponse as QueryParamsResponseV1Beta1, QueryProposalsRequest as QueryProposalsRequestV1Beta1, QueryProposalsResponse as QueryProposalsResponseV1Beta1,
+    QueryParamsRequest as QueryParamsRequestV1Beta1, QueryParamsResponse as QueryParamsResponseV1Beta1, QueryProposalResponse as QueryProposalResponseV1Beta1, QueryProposalRequest as QueryProposalRequestV1Beta1, QueryProposalsRequest as QueryProposalsRequestV1Beta1, QueryProposalsResponse as QueryProposalsResponseV1Beta1,
     QueryTallyResultRequest as QueryTallyResultRequestV1Beta1, QueryTallyResultResponse as QueryTallyResultResponseV1Beta1,
 };
 
@@ -57,6 +57,17 @@ pub async fn get_proposals_v1beta1(
     Ok(res)
 }
 
+pub async fn get_proposal_v1beta1(
+    channel: Channel,
+    query_proposal_request: QueryProposalRequestV1Beta1,
+) -> Result<QueryProposalResponseV1Beta1, tonic::Status> {
+    let res = QueryClientV1Beta1::new(channel)
+        .proposal(query_proposal_request)
+        .await?
+        .into_inner();
+    Ok(res)
+}
+
 
 pub async fn get_proposals_v1(
     channel: Channel,
@@ -64,6 +75,18 @@ pub async fn get_proposals_v1(
 ) -> Result<QueryProposalsResponse, tonic::Status> {
     let res = QueryClient::new(channel)
         .proposals(query_proposal_request)
+        .await?
+        .into_inner();
+    Ok(res)
+}
+
+
+pub async fn get_proposal_v1(
+    channel: Channel,
+    query_proposal_request: QueryProposalRequest,
+) -> Result<QueryProposalResponse, tonic::Status> {
+    let res = QueryClient::new(channel)
+        .proposal(query_proposal_request)
         .await?
         .into_inner();
     Ok(res)

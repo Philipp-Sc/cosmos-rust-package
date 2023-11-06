@@ -14,13 +14,17 @@ use strum_macros::EnumIter;
 use chrono::NaiveDateTime;
 use chrono::{DateTime, Utc};
 use cosmos_sdk_proto::cosmos::gov::v1::TallyResult;
+use cosmos_sdk_proto::prost;
 
 use serde::{Deserialize, Serialize};
 
-use cosmos_sdk_proto::prost::Message;
+
+//use cosmos_sdk_proto::prost::Message;
+//use cosmos_sdk_proto::traits::MessageExt;
 
 use crate::api::custom::types::gov::tally_ext::TallyHelper;
 use crate::api::custom::types::ProtoMessageWrapper;
+
 
 #[derive(
     Deserialize, Serialize, strum_macros::Display, Debug, Clone, Eq, PartialEq, EnumIter, Hash,
@@ -40,6 +44,21 @@ pub enum ProposalStatus {
     StatusPassed = 0x03,
     StatusRejected = 0x04,
     StatusFailed = 0x05,
+}
+
+impl ProposalStatus {
+    // Function to convert i32 to the corresponding ProposalStatus
+    pub fn from_i32(value: i32) -> Option<Self> {
+        match value {
+            0x00 => Some(ProposalStatus::StatusNil),
+            0x01 => Some(ProposalStatus::StatusDepositPeriod),
+            0x02 => Some(ProposalStatus::StatusVotingPeriod),
+            0x03 => Some(ProposalStatus::StatusPassed),
+            0x04 => Some(ProposalStatus::StatusRejected),
+            0x05 => Some(ProposalStatus::StatusFailed),
+            _ => None, // Handle invalid values or return a default variant
+        }
+    }
 }
 
 impl From<ProposalStatus> for i32 {
@@ -69,6 +88,16 @@ impl ProposalStatus {
             _ => panic!(),
         }
     }
+    pub fn to_name(&self) -> &str {
+        match self {
+            ProposalStatus::StatusNil => {"nil"}
+            ProposalStatus::StatusDepositPeriod => {"deposit_period"}
+            ProposalStatus::StatusVotingPeriod => {"voting_period"}
+            ProposalStatus::StatusPassed => {"passed"}
+            ProposalStatus::StatusRejected => {"rejected"}
+            ProposalStatus::StatusFailed => {"failed"}
+        }
+    }
     pub fn to_icon(&self) -> String {
         match self {
             ProposalStatus::StatusNil => "⚪".to_string(),
@@ -81,8 +110,17 @@ impl ProposalStatus {
     }
 }
 
+
+
 #[derive(strum_macros::Display, Debug, Clone, PartialEq)]
 pub enum ProposalContent {
+    MsgExec(Option<cosmos_sdk_proto::cosmos::authz::v1beta1::MsgExec>),
+    //MsgUpdateParams(Option<cosmos_sdk_proto::cosmos::mint::v1beta1::MsgUpdateParams>),
+    //MsgCommunityPoolSpend(Option<cosmos_sdk_proto::cosmos::distribution::v1beta1::MsgCommunityPoolSpend>),
+    MsgExecuteContract(Option<cosmos_sdk_proto::cosmwasm::wasm::v1::MsgExecuteContract>),
+    MsgUpdateInstantiateConfig(Option<osmosis_std::types::cosmwasm::wasm::v1::MsgUpdateInstantiateConfig>),
+    MsgSoftwareUpgrade(Option<cosmos_sdk_proto::cosmos::upgrade::v1beta1::MsgSoftwareUpgrade>),
+    MsgInstantiateContract(Option<cosmos_sdk_proto::cosmwasm::wasm::v1::MsgInstantiateContract>),
     TextProposal(Option<cosmos_sdk_proto::cosmos::gov::v1beta1::TextProposal>),
     CommunityPoolSpendProposal(
         Option<cosmos_sdk_proto::cosmos::distribution::v1beta1::CommunityPoolSpendProposal>,
@@ -113,6 +151,9 @@ pub enum ProposalContent {
     ReplacePoolIncentivesProposal(
         Option<osmosis_std::types::osmosis::poolincentives::v1beta1::ReplacePoolIncentivesProposal>,
     ),
+    SetScalingFactorControllerProposal(
+        Option<osmosis_std::types::osmosis::gamm::v1beta1::SetScalingFactorControllerProposal>,
+    ),
     MigrateContractProposal(Option<cosmos_sdk_proto::cosmwasm::wasm::v1::MigrateContractProposal>),
     UpdateInstantiateConfigProposal(
         Option<cosmos_sdk_proto::cosmwasm::wasm::v1::UpdateInstantiateConfigProposal>,
@@ -129,31 +170,26 @@ pub enum ProposalContent {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Hash)]
 pub struct ProposalExt {
     pub blockchain: SupportedBlockchain,
-    pub status: ProposalStatus,
     pub proposal: ProtoMessageWrapper<cosmos_sdk_proto::cosmos::gov::v1::Proposal>,
 }
 
 impl ProposalExt {
     pub fn new(
         blockchain: &SupportedBlockchain,
-        proposal_status: &ProposalStatus,
         proposal: cosmos_sdk_proto::cosmos::gov::v1::Proposal,
     ) -> Self {
         Self {
             blockchain: blockchain.clone(),
-            status: proposal_status.clone(),
             proposal: ProtoMessageWrapper(proposal),
         }
     }
 
     pub fn from_v1beta1(
         blockchain: &SupportedBlockchain,
-        proposal_status: &ProposalStatus,
         proposal: cosmos_sdk_proto::cosmos::gov::v1beta1::Proposal,
     ) -> Self {
         Self {
             blockchain: blockchain.clone(),
-            status: proposal_status.clone(),
             proposal: ProtoMessageWrapper(cosmos_sdk_proto::cosmos::gov::v1::Proposal {
                 id: proposal.proposal_id,
                 messages: proposal.content.map(|msg| {vec![msg]}).unwrap_or(vec![]),
@@ -187,103 +223,135 @@ impl ProposalExt {
             .map(|any| Self::content(&any)).collect();
         proposal_content
     }
+    
+    pub fn get_proposal_status(&self) -> ProposalStatus {
+        ProposalStatus::from_i32(self.proposal.0.status).unwrap()
+    }
+
+    pub fn get_proposal_types(&self) -> Vec<String>{
+        self.messages_as_proposal_content().iter().map(|x| x.to_string()).collect::<Vec<String>>()
+    }
+
+    pub fn is_final_state(&self) -> bool {
+        self.proposal.0.status > 0x02
+    }
 
     pub fn content(any: &cosmos_sdk_proto::Any) -> ProposalContent {
         let a = any.type_url.to_string();
         match a.as_ref() {
+            "/cosmos.authz.v1beta1.MsgExec" => ProposalContent::MsgExec(
+                any.to_msg().ok(),
+            ),
+            /*
+            "/cosmos.mint.v1beta1.MsgUpdateParams" => ProposalContent::MsgUpdateParams(
+                any.to_msg().ok(),
+            ),
+            "/cosmos.distribution.v1beta1.MsgCommunityPoolSpend"=> ProposalContent::MsgCommunityPoolSpend(
+                any.to_msg().ok(),
+            ),*/
+            "/cosmwasm.wasm.v1.MsgExecuteContract"=> ProposalContent::MsgExecuteContract(
+                any.to_msg().ok(),
+            ),
+            "/cosmwasm.wasm.v1.MsgUpdateInstantiateConfig" => ProposalContent::MsgUpdateInstantiateConfig(
+                osmosis_prost::Message::decode(&any.value[..]).ok(),
+            ),
+            "/cosmos.upgrade.v1beta1.MsgSoftwareUpgrade" => ProposalContent::MsgSoftwareUpgrade(
+                cosmos_sdk_proto::traits::Message::decode(&any.value[..]).ok(),
+            ),
+            "/cosmwasm.wasm.v1.MsgInstantiateContract" => ProposalContent::MsgInstantiateContract(
+                any.to_msg().ok(),
+            ),
             "/cosmos.gov.v1beta1.TextProposal" => ProposalContent::TextProposal(
-                cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+                any.to_msg().ok(),
             ),
             "/cosmos.distribution.v1beta1.CommunityPoolSpendProposal" => {
                 ProposalContent::CommunityPoolSpendProposal(
-                    cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+                    any.to_msg().ok(),
                 )
             }
             "/cosmos.params.v1beta1.ParameterChangeProposal" => {
                 ProposalContent::ParameterChangeProposal(
-                    cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+                    any.to_msg().ok(),
                 )
             }
             "/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal" => {
                 ProposalContent::SoftwareUpgradeProposal(
-                    cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+                    any.to_msg().ok(),
                 )
             }
             "/ibc.core.client.v1.ClientUpdateProposal" => ProposalContent::ClientUpdateProposal(
-                cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+                any.to_msg().ok(),
             ),
             "/osmosis.poolincentives.v1beta1.UpdatePoolIncentivesProposal" => {
-                let decoded = osmosis_std::types::osmosis::poolincentives::v1beta1::UpdatePoolIncentivesProposal::decode(&*any.value).ok();
-                ProposalContent::UpdatePoolIncentivesProposal(decoded)
+                ProposalContent::UpdatePoolIncentivesProposal(osmosis_prost::Message::decode(&any.value[..]).ok())
             }
             "/cosmwasm.wasm.v1.StoreCodeProposal" => ProposalContent::StoreCodeProposal(
-                cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+                any.to_msg().ok(),
             ),
             "/cosmwasm.wasm.v1.InstantiateContractProposal" => {
                 ProposalContent::InstantiateContractProposal(
-                    cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+                    any.to_msg().ok(),
                 )
             }
             "/osmosis.superfluid.v1beta1.RemoveSuperfluidAssetsProposal" => {
-                let decoded = osmosis_std::types::osmosis::superfluid::v1beta1::RemoveSuperfluidAssetsProposal::decode(&*any.value).ok();
-                ProposalContent::RemoveSuperfluidAssetsProposal(decoded)
+                ProposalContent::RemoveSuperfluidAssetsProposal(osmosis_prost::Message::decode(&any.value[..]).ok())
             }
             "/osmosis.superfluid.v1beta1.SetSuperfluidAssetsProposal" => {
-                let decoded = osmosis_std::types::osmosis::superfluid::v1beta1::SetSuperfluidAssetsProposal::decode(&*any.value).ok();
-                ProposalContent::SetSuperfluidAssetsProposal(decoded)
+                ProposalContent::SetSuperfluidAssetsProposal(osmosis_prost::Message::decode(&any.value[..]).ok())
             }
             "/osmosis.txfees.v1beta1.UpdateFeeTokenProposal" => {
-                let decoded =
-                    osmosis_std::types::osmosis::txfees::v1beta1::UpdateFeeTokenProposal::decode(
-                        &*any.value,
-                    )
-                    .ok();
-                ProposalContent::UpdateFeeTokenProposal(decoded)
+                ProposalContent::UpdateFeeTokenProposal(osmosis_prost::Message::decode(&any.value[..]).ok())
             }
             "/osmosis.poolincentives.v1beta1.ReplacePoolIncentivesProposal" => {
-                let decoded = osmosis_std::types::osmosis::poolincentives::v1beta1::ReplacePoolIncentivesProposal::decode(&*any.value).ok();
-                ProposalContent::ReplacePoolIncentivesProposal(decoded)
+                ProposalContent::ReplacePoolIncentivesProposal(osmosis_prost::Message::decode(&any.value[..]).ok())
+            }
+            "/osmosis.gamm.v1beta1.SetScalingFactorControllerProposal" => {
+                ProposalContent::SetScalingFactorControllerProposal(osmosis_prost::Message::decode(&any.value[..]).ok())
             }
             "/cosmwasm.wasm.v1.MigrateContractProposal" => {
                 ProposalContent::MigrateContractProposal(
-                    cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+                    any.to_msg().ok(),
                 )
             }
             "/cosmwasm.wasm.v1.UpdateInstantiateConfigProposal" => {
                 ProposalContent::UpdateInstantiateConfigProposal(
-                    cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+                    any.to_msg().ok(),
                 )
             }
             "/cosmwasm.wasm.v1.SudoContractProposal" => ProposalContent::SudoContractProposal(
-                cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+                any.to_msg().ok(),
             ),
             "/cosmwasm.wasm.v1.ExecuteContractProposal" => {
                 ProposalContent::ExecuteContractProposal(
-                    cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+                    any.to_msg().ok(),
                 )
             }
             "/cosmwasm.wasm.v1.UpdateAdminProposal" => ProposalContent::UpdateAdminProposal(
-                cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+                any.to_msg().ok(),
             ),
             "/cosmwasm.wasm.v1.ClearAdminProposal" => ProposalContent::ClearAdminProposal(
-                cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+                any.to_msg().ok(),
             ),
             "/cosmwasm.wasm.v1.PinCodesProposal" => ProposalContent::PinCodesProposal(
-                cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+                any.to_msg().ok(),
             ),
             "/cosmwasm.wasm.v1.UnpinCodesProposal" => ProposalContent::UnpinCodesProposal(
-                cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+                any.to_msg().ok(),
             ),
             &_ => ProposalContent::UnknownProposalType(a),
         }
     }
 
     pub fn is_in_deposit_period(&self) -> bool {
-        self.status == ProposalStatus::StatusDepositPeriod
+        self.get_proposal_status() == ProposalStatus::StatusDepositPeriod
+    }
+
+    pub fn is_in_voting_period(&self) -> bool {
+        self.get_proposal_status() == ProposalStatus::StatusVotingPeriod
     }
 
     pub fn get_timestamp_based_on_proposal_status(&self) -> &Option<Timestamp> {
-        match self.status {
+        match self.get_proposal_status() {
             ProposalStatus::StatusNil | ProposalStatus::StatusDepositPeriod => {
                 &self.proposal.0.submit_time
             }
@@ -297,6 +365,21 @@ impl ProposalExt {
     pub fn get_description(&self) -> String {
         self.messages_as_proposal_content().iter().map(|msg| {
             match msg {
+                ProposalContent::MsgExec(Some(p)) => {
+                    p.grantee.to_owned()
+                }
+                ProposalContent::MsgExecuteContract(Some(p)) => {
+                    p.contract.to_owned()
+                }
+                ProposalContent::MsgUpdateInstantiateConfig(Some(p)) => {
+                    p.sender.to_owned()
+                }
+                ProposalContent::MsgSoftwareUpgrade(Some(p)) => {
+                    p.authority.to_owned()
+                }
+                ProposalContent::MsgInstantiateContract(Some(p)) => {
+                    p.label.to_owned()
+                }
                 ProposalContent::TextProposal(Some(p)) => {
                     p.description.to_owned()
                 }
@@ -354,6 +437,9 @@ impl ProposalExt {
                 ProposalContent::UnpinCodesProposal(Some(p)) => {
                     p.description.to_owned()
                 }
+                ProposalContent::SetScalingFactorControllerProposal(Some(p)) => {
+                    p.description.to_owned()
+                }
                 ProposalContent::UnknownProposalType(type_url) =>
                     format!("Error: UnknownProposalTypeError: ProposalContent can not be decoded for unknown ProposalType.\n\nType URL:\n{}", type_url)
                 ,
@@ -366,6 +452,21 @@ impl ProposalExt {
     pub fn get_title(&self) -> String {
         self.messages_as_proposal_content().iter().map(|msg| {
             match msg {
+                ProposalContent::MsgExec(Some(p)) => {
+                    p.grantee.to_owned()
+                }
+                ProposalContent::MsgExecuteContract(Some(p)) => {
+                    p.contract.to_owned()
+                }
+                ProposalContent::MsgUpdateInstantiateConfig(Some(p)) => {
+                    p.sender.to_owned()
+                }
+                ProposalContent::MsgSoftwareUpgrade(Some(p)) => {
+                    p.authority.to_owned()
+                }
+                ProposalContent::MsgInstantiateContract(Some(p)) => {
+                    p.label.to_owned()
+                }
                 ProposalContent::TextProposal(Some(p)) => p.title.to_owned(),
                 ProposalContent::CommunityPoolSpendProposal(Some(p)) => p.title.to_owned(),
                 ProposalContent::ParameterChangeProposal(Some(p)) => p.title.to_owned(),
@@ -385,6 +486,9 @@ impl ProposalExt {
                 ProposalContent::UpdateAdminProposal(Some(p)) => p.title.to_owned(),
                 ProposalContent::ClearAdminProposal(Some(p)) => p.title.to_owned(),
                 ProposalContent::UnpinCodesProposal(Some(p)) => p.title.to_owned(),
+                ProposalContent::SetScalingFactorControllerProposal(Some(p)) => {
+                    p.title.to_owned()
+                }
                 ProposalContent::UnknownProposalType(_type_url) => {
                     "UnknownProposalTypeError".to_string()
                 }
@@ -393,7 +497,7 @@ impl ProposalExt {
         }).collect::<Vec<String>>().join("\n")
     }
 
-    pub fn proposal_preview_msg(&self, fraud_classification: Option<f64>) -> String {
+    pub fn preview_msg(&self, fraud_classification: Option<f64>) -> String {
         let title = self.get_title();
 
         let proposal_id = self.get_proposal_id();
@@ -405,7 +509,7 @@ impl ProposalExt {
                 .map(|x| x.to_string())
                 .collect::<Vec<String>>().join("\n"),
             proposal_id,
-            &self.status.to_icon(),
+            &self.get_proposal_status().to_icon(),
             title,
         );
 
@@ -481,11 +585,24 @@ impl ProposalExt {
     }
 
     pub fn spam_likelihood(&self) -> Option<f64> {
-        let proposal = &self.proposal.0;
-        if let Some(tally) = &proposal.final_tally_result {
-            return TallyHelper(tally).spam_likelihood();
+        let is_bad_proposal = match self.get_proposal_status() {
+            ProposalStatus::StatusRejected | ProposalStatus::StatusFailed => {
+                true
+            },
+            ProposalStatus::StatusPassed => {
+                return  Some(0.0);
+            }
+            _ => {false}
+        };
+        let mut result: Option<f64> = None;
+        if let Some(tally) = &self.proposal.0.final_tally_result {
+            result = TallyHelper(tally).spam_likelihood();
         }
-        None
+        if is_bad_proposal {
+            Some(result.map(|spam_likelihood| (spam_likelihood +1.0)/2.0).unwrap_or(1.0))
+        }else{
+            result
+        }
     }
     pub fn total_votes(&self) -> Option<f64> {
         let proposal = &self.proposal.0;
@@ -551,7 +668,7 @@ impl ProposalExt {
         let tally_result = self.get_final_tally_result();
 
         let mut voting_state = "".to_string();
-        if &self.status == &ProposalStatus::StatusVotingPeriod {
+        if &self.get_proposal_status() == &ProposalStatus::StatusVotingPeriod {
             let mut voting_start = false;
             if let Some(time) = &proposal.voting_start_time {
                 match DateTime::<Utc>::from_utc(
@@ -590,13 +707,13 @@ impl ProposalExt {
                 (false, false) => format!("Voting starts at {}\n\n", voting_start_text),
                 (false, true) => format!("Voting ended before it started!\n\n"),
             };
-        } else if &self.status == &ProposalStatus::StatusDepositPeriod {
+        } else if &self.get_proposal_status() == &ProposalStatus::StatusDepositPeriod {
             voting_state = format!("You can help the proposal move forward by depositing now. \nThe deposit period is open until {}\n\n",Self::timestamp_to_string(proposal.deposit_end_time.clone()))
         }
 
         format!(
             "{} {}{}",
-            &self.status.to_icon(),
+            &self.get_proposal_status().to_icon(),
             voting_state,
             tally_result,
         )

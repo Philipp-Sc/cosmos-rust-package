@@ -73,9 +73,15 @@ impl ProposalStatusV1Beta1 {
         }
     }
 }
-
 #[derive(strum_macros::Display, Debug, Clone, PartialEq)]
 pub enum ProposalContent {
+    MsgExec(Option<cosmos_sdk_proto::cosmos::authz::v1beta1::MsgExec>),
+    //MsgUpdateParams(Option<cosmos_sdk_proto::cosmos::mint::v1beta1::MsgUpdateParams>),
+    //MsgCommunityPoolSpend(Option<cosmos_sdk_proto::cosmos::distribution::v1beta1::MsgCommunityPoolSpend>),
+    MsgExecuteContract(Option<cosmos_sdk_proto::cosmwasm::wasm::v1::MsgExecuteContract>),
+    MsgUpdateInstantiateConfig(Option<osmosis_std::types::cosmwasm::wasm::v1::MsgUpdateInstantiateConfig>),
+    MsgSoftwareUpgrade(Option<cosmos_sdk_proto::cosmos::upgrade::v1beta1::MsgSoftwareUpgrade>),
+    MsgInstantiateContract(Option<cosmos_sdk_proto::cosmwasm::wasm::v1::MsgInstantiateContract>),
     TextProposal(Option<cosmos_sdk_proto::cosmos::gov::v1beta1::TextProposal>),
     CommunityPoolSpendProposal(
         Option<cosmos_sdk_proto::cosmos::distribution::v1beta1::CommunityPoolSpendProposal>,
@@ -105,6 +111,9 @@ pub enum ProposalContent {
     ),
     ReplacePoolIncentivesProposal(
         Option<osmosis_std::types::osmosis::poolincentives::v1beta1::ReplacePoolIncentivesProposal>,
+    ),
+    SetScalingFactorControllerProposal(
+        Option<osmosis_std::types::osmosis::gamm::v1beta1::SetScalingFactorControllerProposal>,
     ),
     MigrateContractProposal(Option<cosmos_sdk_proto::cosmwasm::wasm::v1::MigrateContractProposal>),
     UpdateInstantiateConfigProposal(
@@ -157,88 +166,104 @@ impl ProposalV1Beta1Ext {
     pub fn content(any: &cosmos_sdk_proto::Any) -> ProposalContent {
         let a = any.type_url.to_string();
         match a.as_ref() {
+
+            "/cosmos.authz.v1beta1.MsgExec" => ProposalContent::MsgExec(
+                any.to_msg().ok(),
+            ),
+           /*"/cosmos.mint.v1beta1.MsgUpdateParams" => ProposalContent::MsgUpdateParams(
+                any.to_msg().ok(),
+            ),
+            "/cosmos.distribution.v1beta1.MsgCommunityPoolSpend"=> ProposalContent::MsgCommunityPoolSpend(
+                any.to_msg().ok(),
+            ),*/
+            "/cosmwasm.wasm.v1.MsgExecuteContract"=> ProposalContent::MsgExecuteContract(
+                any.to_msg().ok(),
+            ),
+            "/cosmwasm.wasm.v1.MsgUpdateInstantiateConfig" => ProposalContent::MsgUpdateInstantiateConfig(
+                osmosis_prost::Message::decode(&any.value[..]).ok(),
+            ),
+            "/cosmos.upgrade.v1beta1.MsgSoftwareUpgrade" => ProposalContent::MsgSoftwareUpgrade(
+                cosmos_sdk_proto::traits::Message::decode(&any.value[..]).ok(),
+            ),
+            "/cosmwasm.wasm.v1.MsgInstantiateContract" => ProposalContent::MsgInstantiateContract(
+                any.to_msg().ok(),
+            ),
             "/cosmos.gov.v1beta1.TextProposal" => ProposalContent::TextProposal(
-                cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+                any.to_msg().ok(),
             ),
             "/cosmos.distribution.v1beta1.CommunityPoolSpendProposal" => {
                 ProposalContent::CommunityPoolSpendProposal(
-                    cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+                    any.to_msg().ok(),
                 )
             }
             "/cosmos.params.v1beta1.ParameterChangeProposal" => {
                 ProposalContent::ParameterChangeProposal(
-                    cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+                    any.to_msg().ok(),
                 )
             }
             "/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal" => {
                 ProposalContent::SoftwareUpgradeProposal(
-                    cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+                    any.to_msg().ok(),
                 )
             }
             "/ibc.core.client.v1.ClientUpdateProposal" => ProposalContent::ClientUpdateProposal(
-                cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+                any.to_msg().ok(),
             ),
             "/osmosis.poolincentives.v1beta1.UpdatePoolIncentivesProposal" => {
-                let decoded = osmosis_std::types::osmosis::poolincentives::v1beta1::UpdatePoolIncentivesProposal::decode(&*any.value).ok();
-                ProposalContent::UpdatePoolIncentivesProposal(decoded)
+                ProposalContent::UpdatePoolIncentivesProposal(osmosis_prost::Message::decode(&any.value[..]).ok())
             }
             "/cosmwasm.wasm.v1.StoreCodeProposal" => ProposalContent::StoreCodeProposal(
-                cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+                any.to_msg().ok(),
             ),
             "/cosmwasm.wasm.v1.InstantiateContractProposal" => {
                 ProposalContent::InstantiateContractProposal(
-                    cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+                    any.to_msg().ok(),
                 )
             }
             "/osmosis.superfluid.v1beta1.RemoveSuperfluidAssetsProposal" => {
-                let decoded = osmosis_std::types::osmosis::superfluid::v1beta1::RemoveSuperfluidAssetsProposal::decode(&*any.value).ok();
-                ProposalContent::RemoveSuperfluidAssetsProposal(decoded)
+                ProposalContent::RemoveSuperfluidAssetsProposal(osmosis_prost::Message::decode(&any.value[..]).ok())
             }
             "/osmosis.superfluid.v1beta1.SetSuperfluidAssetsProposal" => {
-                let decoded = osmosis_std::types::osmosis::superfluid::v1beta1::SetSuperfluidAssetsProposal::decode(&*any.value).ok();
-                ProposalContent::SetSuperfluidAssetsProposal(decoded)
+                ProposalContent::SetSuperfluidAssetsProposal(osmosis_prost::Message::decode(&any.value[..]).ok())
             }
             "/osmosis.txfees.v1beta1.UpdateFeeTokenProposal" => {
-                let decoded =
-                    osmosis_std::types::osmosis::txfees::v1beta1::UpdateFeeTokenProposal::decode(
-                        &*any.value,
-                    )
-                    .ok();
-                ProposalContent::UpdateFeeTokenProposal(decoded)
+                ProposalContent::UpdateFeeTokenProposal(osmosis_prost::Message::decode(&any.value[..]).ok())
             }
             "/osmosis.poolincentives.v1beta1.ReplacePoolIncentivesProposal" => {
-                let decoded = osmosis_std::types::osmosis::poolincentives::v1beta1::ReplacePoolIncentivesProposal::decode(&*any.value).ok();
-                ProposalContent::ReplacePoolIncentivesProposal(decoded)
+                ProposalContent::ReplacePoolIncentivesProposal(osmosis_prost::Message::decode(&any.value[..]).ok())
+            }
+            "/osmosis.gamm.v1beta1.SetScalingFactorControllerProposal" => {
+                ProposalContent::SetScalingFactorControllerProposal(osmosis_prost::Message::decode(&any.value[..]).ok())
             }
             "/cosmwasm.wasm.v1.MigrateContractProposal" => {
                 ProposalContent::MigrateContractProposal(
-                    cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+                    any.to_msg().ok(),
                 )
             }
             "/cosmwasm.wasm.v1.UpdateInstantiateConfigProposal" => {
                 ProposalContent::UpdateInstantiateConfigProposal(
-                    cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+                    any.to_msg().ok(),
                 )
             }
             "/cosmwasm.wasm.v1.SudoContractProposal" => ProposalContent::SudoContractProposal(
-                cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+                any.to_msg().ok(),
             ),
             "/cosmwasm.wasm.v1.ExecuteContractProposal" => {
                 ProposalContent::ExecuteContractProposal(
-                    cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+                    any.to_msg().ok(),
                 )
             }
             "/cosmwasm.wasm.v1.UpdateAdminProposal" => ProposalContent::UpdateAdminProposal(
-                cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+                any.to_msg().ok(),
             ),
             "/cosmwasm.wasm.v1.ClearAdminProposal" => ProposalContent::ClearAdminProposal(
-                cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+                any.to_msg().ok(),
             ),
             "/cosmwasm.wasm.v1.PinCodesProposal" => ProposalContent::PinCodesProposal(
-                cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+                any.to_msg().ok(),
             ),
             "/cosmwasm.wasm.v1.UnpinCodesProposal" => ProposalContent::UnpinCodesProposal(
-                cosmos_sdk_proto::traits::MessageExt::from_any(any).ok(),
+                any.to_msg().ok(),
             ),
             &_ => ProposalContent::UnknownProposalType(a),
         }

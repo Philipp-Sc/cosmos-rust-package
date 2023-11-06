@@ -51,6 +51,9 @@ pub struct GRPC_Service {
 }
 
 impl SupportedBlockchain {
+    pub fn get_name(&self) -> String {
+        self.name.to_lowercase()
+    }
     pub async fn channel(&self) -> Result<Channel, tonic::Status> {
         match &self.grpc_service.error {
             Some(err) => Err(tonic::Status::failed_precondition(format!(
