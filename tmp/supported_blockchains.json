@@ -6,7 +6,7 @@
     "prefix": "terra",
     "grpc_service": {
       "grpc_urls": [],
-      "error": null
+      "errors": []
     },
     "governance_proposals_link": "https://station.terra.money/proposal/"
   },
@@ -17,7 +17,7 @@
     "prefix": "chihuahua",
     "grpc_service": {
       "grpc_urls": [],
-      "error": null
+      "errors": []
     },
     "governance_proposals_link": "https://wallet.keplr.app/chains/chihuahua/proposals/"
   },
@@ -28,7 +28,7 @@
     "prefix": "kava",
     "grpc_service": {
       "grpc_urls": [],
-      "error": null
+      "errors": []
     },
     "governance_proposals_link": "https://wallet.keplr.app/chains/kava/proposals/"
   },
@@ -39,7 +39,7 @@
     "prefix": "axelar",
     "grpc_service": {
       "grpc_urls": [],
-      "error": null
+      "errors": []
     },
     "governance_proposals_link": "https://wallet.keplr.app/chains/axelar/proposals/"
   },
@@ -50,7 +50,7 @@
     "prefix": "stars",
     "grpc_service": {
       "grpc_urls": [],
-      "error": null
+      "errors": []
     },
     "governance_proposals_link": "https://wallet.keplr.app/chains/stargaze/proposals/"
   },
@@ -61,7 +61,7 @@
     "prefix": "mars",
     "grpc_service": {
       "grpc_urls": [],
-      "error": null
+      "errors": []
     },
     "governance_proposals_link": "https://wallet.keplr.app/chains/mars-hub/proposals/"
   },
@@ -72,7 +72,7 @@
     "prefix": "evmos",
     "grpc_service": {
       "grpc_urls": [],
-      "error": null
+      "errors": []
     },
     "governance_proposals_link": "https://wallet.keplr.app/chains/evmos/proposals/"
   },
@@ -83,7 +83,7 @@
     "prefix": "sif",
     "grpc_service": {
       "grpc_urls": [],
-      "error": null
+      "errors": []
     },
     "governance_proposals_link": "https://wallet.keplr.app/chains/sifchain/proposals/"
   },
@@ -94,7 +94,7 @@
     "prefix": "terra",
     "grpc_service": {
       "grpc_urls": [],
-      "error": null
+      "errors": []
     },
     "governance_proposals_link": "https://station.terra.money/proposal/phoenix-1/"
   },
@@ -105,7 +105,7 @@
     "prefix": "osmo",
     "grpc_service": {
       "grpc_urls": [],
-      "error": null
+      "errors": []
     },
     "governance_proposals_link": "https://wallet.keplr.app/chains/osmosis/proposals/"
   },
@@ -116,7 +116,7 @@
     "prefix": "juno",
     "grpc_service": {
       "grpc_urls": [],
-      "error": null
+      "errors": []
     },
     "governance_proposals_link": "https://wallet.keplr.app/chains/juno/proposals/"
   },
@@ -127,7 +127,7 @@
     "prefix": "atom",
     "grpc_service": {
       "grpc_urls": [],
-      "error": null
+      "errors": []
     },
     "governance_proposals_link": "https://wallet.keplr.app/chains/cosmos-hub/proposals/"
   },
@@ -138,7 +138,7 @@
     "prefix": "kuji",
     "grpc_service": {
       "grpc_urls": [],
-      "error": null
+      "errors": []
     },
     "governance_proposals_link": "https://blue.kujira.app/govern/"
   }

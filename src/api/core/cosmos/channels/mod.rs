@@ -50,7 +50,7 @@ impl Hash for SupportedBlockchain {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Hash)]
 pub struct GRPC_Service {
     pub grpc_urls: Vec<String>, // viable grpc_urls
-    pub error: Option<String>,  // error msg if no url could be selected
+    pub errors: Vec<String>,  // error msg if no url could be selected
 }
 
 impl SupportedBlockchain {
@@ -58,13 +58,13 @@ impl SupportedBlockchain {
         self.name.to_lowercase()
     }
     pub async fn channel(&self) -> Result<Channel, tonic::Status> {
-        match &self.grpc_service.error {
-            Some(err) => Err(tonic::Status::failed_precondition(format!(
+        match self.grpc_service.grpc_urls.is_empty() {
+            true => Err(tonic::Status::failed_precondition(format!(
                 "Error: {} is not a supported cosmos blockchain: {}",
                 self.name,
-                err.to_string()
+                self.grpc_service.errors.join(",\n")
             ))),
-            None => {
+            false => {
                 let selected_grpc_service =
                     self.grpc_service.grpc_urls.choose(&mut rand::thread_rng());
                 match selected_grpc_service {
@@ -394,17 +394,12 @@ fn merge_channels_with_supported_blockchains(mut supported_blockchains: HashMap<
                     selected.push(val.to_owned());
                 }
                 Err(err) => {
-                    errors.push(format!("{:?}", err));
+                    errors.push(err.to_string());
                 }
             }
         }
-        if selected.is_empty() {
-            v.grpc_service.error =
-                Some(format!("No viable endpoint for {} found: {:?}", &k, errors));
-        } else {
-            v.grpc_service.error = None;
-        }
-        v.grpc_service.grpc_urls = selected;
+        v.grpc_service.errors.append(&mut errors);
+        v.grpc_service.grpc_urls.append(&mut selected);
     }
     supported_blockchains
 }
