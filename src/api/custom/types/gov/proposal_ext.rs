@@ -14,7 +14,7 @@ use strum_macros::EnumIter;
 use chrono::NaiveDateTime;
 use chrono::{DateTime, Utc};
 use cosmos_sdk_proto::cosmos::gov::v1::TallyResult;
-use cosmos_sdk_proto::prost;
+
 
 use serde::{Deserialize, Serialize};
 

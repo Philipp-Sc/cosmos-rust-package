@@ -4,11 +4,11 @@ use crate::api::core::*;
 use std::string::ToString;
 
 use cosmos_sdk_proto::cosmos::base::query::v1beta1::PageRequest;
-use tonic::{Code, Status};
+use tonic::{Code};
 
 use crate::api::custom::types::gov::params_ext::ParamsExt;
 use crate::api::custom::types::gov::proposal_ext::{ProposalExt, ProposalStatus};
-use crate::api::custom::types::gov::proposal_v1beta1_ext::{ProposalV1Beta1Ext, ProposalStatusV1Beta1};
+
 use crate::api::custom::types::gov::tally_ext::TallyResultExt;
 use crate::api::custom::types::gov::tally_v1beta1_ext::TallyResultV1Beta1Ext;
 use crate::api::custom::types::staking::validators_ext::ValidatorsExt;
@@ -337,7 +337,7 @@ mod test {
             rank: 1,
             governance_proposals_link: "".to_string(),
         };
-        let result = get_proposals(supported_blockchain, ProposalStatus::StatusNil, None).await;
+        let result = get_proposals(supported_blockchain, ProposalStatus::StatusNil, None, None,None, false).await;
         assert!(result.is_ok());
         for each in result.unwrap().1 {
             println!("Decoded Proposal:\n{:?}", &each.proposal);

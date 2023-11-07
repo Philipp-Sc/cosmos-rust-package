@@ -4,7 +4,7 @@ use tonic::transport::Channel;
 
 use cosmos_sdk_proto::cosmos::gov::v1::query_client::QueryClient;
 use cosmos_sdk_proto::cosmos::gov::v1::{
-    QueryParamsRequest, QueryParamsResponse, QueryProposalsRequest, QueryProposalsResponse,
+    QueryProposalsRequest, QueryProposalsResponse,
     QueryTallyResultRequest, QueryTallyResultResponse, QueryProposalRequest, QueryProposalResponse
 };
 use cosmos_sdk_proto::cosmos::gov::v1beta1::query_client::QueryClient as QueryClientV1Beta1;

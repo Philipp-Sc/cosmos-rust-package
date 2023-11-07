@@ -5,7 +5,7 @@ use std::hash::Hash;
 use crate::api::core::cosmos::channels::SupportedBlockchain;
 use crate::api::custom::types::ProtoMessageWrapper;
 use cosmos_sdk_proto::cosmos::gov::v1::{QueryTallyResultResponse, TallyResult};
-use cosmos_sdk_proto::cosmos::gov::v1beta1::{QueryTallyResultResponse as QueryTallyResultResponseV1Beta1, TallyResult as TallyResultV1Beta1};
+use cosmos_sdk_proto::cosmos::gov::v1beta1::{QueryTallyResultResponse as QueryTallyResultResponseV1Beta1};
 
 use num_format::{Locale, ToFormattedString};
 

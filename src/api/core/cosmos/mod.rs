@@ -153,7 +153,7 @@ pub fn sign_doc(
 }
 
 pub async fn simulate_tx(tx_bytes: Vec<u8>) -> anyhow::Result<()> {
-    let _channel = channels::get_supported_blockchains_from_chain_registry(
+    /*let _channel = channels::get_supported_blockchains_from_chain_registry(
         "./packages/chain-registry",
         true,
         "./tmp/supported_blockchains.json",
@@ -163,7 +163,7 @@ pub async fn simulate_tx(tx_bytes: Vec<u8>) -> anyhow::Result<()> {
     .get("terra2")
     .unwrap()
     .channel()
-    .await?;
+    .await?;*/
     let res = ServiceClient::connect("http://osmosis.strange.love:9090")
         .await?
         .simulate(SimulateRequest {
@@ -218,7 +218,7 @@ pub async fn pipes() -> anyhow::Result<()> {
 */
 
 pub async fn msg_send() -> anyhow::Result<()> {
-    let _channel = channels::get_supported_blockchains_from_chain_registry(
+    /*let _channel = channels::get_supported_blockchains_from_chain_registry(
         "./packages/chain-registry",
         true,
         "./tmp/supported_blockchains.json",
@@ -228,7 +228,7 @@ pub async fn msg_send() -> anyhow::Result<()> {
     .get("terra2")
     .unwrap()
     .channel()
-    .await?;
+    .await?;*/
 
     /*
     let auth_info =

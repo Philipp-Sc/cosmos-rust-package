@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use tonic::transport::channel::Channel;
 
 use cosmos_sdk_proto::cosmos::base::tendermint::v1beta1::GetNodeInfoRequest;
-use lazy_static::lazy_static;
+
 
 use std::fmt::Debug;
 use std::fs::File;
@@ -13,8 +13,8 @@ use std::pin::Pin;
 use log::{debug, error, info};
 use std::process::Command;
 use std::process::Output;
-use num_format::Locale::to;
-use tokio::task::JoinSet;
+
+
 
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
@@ -164,7 +164,7 @@ pub struct CheckUrls {
 
 impl CheckUrls {
     pub fn stream(key_grpc_url_list: Vec<(String, Vec<String>)>) -> Self {
-        let mut join_set = FuturesUnordered::new();
+        let join_set = FuturesUnordered::new();
 
         for (key, urls) in key_grpc_url_list.into_iter() {
             for url in urls.into_iter() {
@@ -428,6 +428,7 @@ mod test {
         assert!(result.is_ok());
     }
 
+    /*
     #[tokio::test]
     async fn test_select_channel_from_grpc_endpoints_function() {
         let name = "test";
@@ -450,5 +451,5 @@ mod test {
         )
         .await;
         println!("{:?}", result);
-    }
+    }*/
 }

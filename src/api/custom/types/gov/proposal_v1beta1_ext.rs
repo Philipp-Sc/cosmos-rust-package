@@ -16,7 +16,7 @@ use chrono::{DateTime, Utc};
 
 use serde::{Deserialize, Serialize};
 
-use cosmos_sdk_proto::prost::Message;
+
 
 use crate::api::custom::types::gov::tally_v1beta1_ext::TallyHelper;
 use crate::api::custom::types::ProtoMessageWrapper;
