@@ -8,6 +8,7 @@ use std::fmt::Debug;
 use std::fs::File;
 use std::hash::{Hash, Hasher};
 use std::io::BufReader;
+use std::pin::Pin;
 
 use log::{debug, error, info};
 use std::process::Command;
@@ -18,6 +19,8 @@ use tokio::task::JoinSet;
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
 
+use futures::stream::{FuturesUnordered, StreamExt, Stream};
+use futures::task::*;
 
 pub type SupportedBlockchainType = HashMap<String, SupportedBlockchain>;
 
@@ -153,6 +156,54 @@ pub async fn select_channel_from_grpc_endpoints(key_grpc_url_list: Vec<(String,V
     }
     channels
 }*/
+
+
+pub struct CheckUrls {
+    join_set: FuturesUnordered<tokio::task::JoinHandle<Result<(String, String), (String, anyhow::Error)>>>,
+}
+
+impl CheckUrls {
+    pub fn stream(key_grpc_url_list: Vec<(String, Vec<String>)>) -> Self {
+        let mut join_set = FuturesUnordered::new();
+
+        for (key, urls) in key_grpc_url_list.into_iter() {
+            for url in urls.into_iter() {
+                let key_clone = key.clone();
+                join_set.push(tokio::spawn(async move {
+                    match check_grpc_url(url).await {
+                        Ok(passed) => Ok((key_clone, passed)),
+                        Err(failed) => Err((key_clone, failed)),
+                    }
+                }));
+            }
+        }
+        Self { join_set }
+    }
+}
+
+impl Stream for CheckUrls {
+    type Item = (String, Result<String, anyhow::Error>);
+
+    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        match self.join_set.poll_next_unpin(cx) {
+            Poll::Ready(Some(result)) => match result {
+                Ok(Ok((key, url))) => Poll::Ready(Some((key,Ok(url)))),
+                Ok(Err((key, err))) => Poll::Ready(Some((key.clone(), Err(anyhow::anyhow!("Failed to check URL of {}: {}", key, err))))),
+                Err(_err) => {
+                    if self.join_set.is_empty() {
+                        Poll::Ready(None)
+                    }else{
+                        Poll::Pending
+                    }
+                },
+            },
+            Poll::Ready(None) => Poll::Ready(None),
+            Poll::Pending => Poll::Pending,
+        }
+    }
+}
+
+/*
 pub async fn select_channel_from_grpc_endpoints(
     key_grpc_url_list: Vec<(String, Vec<String>)>,
 ) -> Vec<(String, Result<String, anyhow::Error>)> {
@@ -203,7 +254,7 @@ pub async fn select_channel_from_grpc_endpoints(
         }
     }
     channels
-}
+}*/
 
 fn run_cmd(cmd: &str, args: Option<Vec<&str>>) -> anyhow::Result<Output> {
     let command = format!("{}, {:?}", &cmd, &args);
@@ -220,13 +271,11 @@ fn run_cmd(cmd: &str, args: Option<Vec<&str>>) -> anyhow::Result<Output> {
     Ok(exit_output.map_err(|err| anyhow::anyhow!("{}, command: {}", err.to_string(), command))?)
 }
 
-// pull_interval in seconds
-pub async fn get_supported_blockchains_from_chain_registry(
+pub fn update_git(
     git_path: &str,
     git_pull: bool,
-    json_path: &str,
     sync_interval_in_secs: Option<u64>,
-) -> anyhow::Result<HashMap<String, SupportedBlockchain>> {
+) -> anyhow::Result<()> {
     if git_pull {
         let mut update: bool = false;
         if let Some(pull_interval) = sync_interval_in_secs {
@@ -255,13 +304,26 @@ pub async fn get_supported_blockchains_from_chain_registry(
             run_cmd("git", Some(vec!["-C", git_path, "pull"]))?;
         }
     }
+    Ok(())
+}
 
+pub fn prepare_blockchain_list(
+    json_path: &str,
+) -> anyhow::Result<HashMap<String, SupportedBlockchain>> {
     let data = std::fs::read_to_string(json_path)
         .map_err(|err| anyhow::anyhow!("{}, File: {}", err.to_string(), json_path))?;
-    let mut supported_blockchains: HashMap<String, SupportedBlockchain> =
+    let supported_blockchains: HashMap<String, SupportedBlockchain> =
         serde_json::from_str(&data)
             .map_err(|err| anyhow::anyhow!("{}, File: {}", err.to_string(), json_path))?;
 
+    Ok(supported_blockchains)
+}
+
+
+pub fn get_channel_list(
+    git_path: &str,
+    supported_blockchains: &HashMap<String, SupportedBlockchain>
+) -> anyhow::Result<Vec<(String, Vec<String>)>> {
     let mut list: Vec<(String, Vec<String>)> = Vec::new();
 
     for (k, v) in supported_blockchains.iter() {
@@ -282,9 +344,47 @@ pub async fn get_supported_blockchains_from_chain_registry(
         }
         list.push((k.clone(), try_these_grpc_urls));
     }
+    Ok(list)
+}
 
-    let channels = select_channel_from_grpc_endpoints(list).await;
+pub struct SupportedBlockchainIter {
+    check_urls: Pin<Box<dyn Stream<Item=(String, Result<String, anyhow::Error>)> + Send>>,
+    supported_blockchains: HashMap<String, SupportedBlockchain>,
+}
 
+impl SupportedBlockchainIter {
+    pub fn new(
+        git_path: &str,
+        git_pull: bool,
+        json_path: &str,
+        sync_interval_in_secs: Option<u64>,
+    ) -> anyhow::Result<Self> {
+        update_git(git_path, git_pull, sync_interval_in_secs)?;
+        let supported_blockchains = prepare_blockchain_list(json_path)?;
+        let list = get_channel_list(git_path,&supported_blockchains)?;
+        let check_urls = CheckUrls::stream(list);
+
+        Ok(Self {
+            check_urls: Box::pin(check_urls),
+            supported_blockchains,
+        })
+    }
+
+    pub async fn next(&mut self) -> Option<&HashMap<String, SupportedBlockchain>> {
+        match self.check_urls.next().await {
+            Some(channel) => {
+                self.supported_blockchains = merge_channels_with_supported_blockchains(
+                    self.supported_blockchains.clone(),
+                    vec![channel],
+                );
+                Some(&self.supported_blockchains)
+            }
+            None => None,
+        }
+    }
+}
+
+fn merge_channels_with_supported_blockchains(mut supported_blockchains: HashMap<String, SupportedBlockchain>, channels: Vec<(String, Result<String, anyhow::Error>)> ) -> HashMap<String, SupportedBlockchain> {
     for (k, v) in supported_blockchains.iter_mut() {
         let mut selected: Vec<String> = Vec::new();
         let mut errors: Vec<String> = Vec::new();
@@ -306,10 +406,9 @@ pub async fn get_supported_blockchains_from_chain_registry(
         }
         v.grpc_service.grpc_urls = selected;
     }
-
-    info!("Got Supported Blockchains from Chain-Registry!");
-    Ok(supported_blockchains)
+    supported_blockchains
 }
+
 
 #[cfg(test)]
 mod test {
