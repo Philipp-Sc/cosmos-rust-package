@@ -76,8 +76,8 @@ impl ProposalStatusV1Beta1 {
 #[derive(strum_macros::Display, Debug, Clone, PartialEq)]
 pub enum ProposalContent {
     MsgExec(Option<cosmos_sdk_proto::cosmos::authz::v1beta1::MsgExec>),
-    //MsgUpdateParams(Option<cosmos_sdk_proto::cosmos::mint::v1beta1::MsgUpdateParams>),
-    //MsgCommunityPoolSpend(Option<cosmos_sdk_proto::cosmos::distribution::v1beta1::MsgCommunityPoolSpend>),
+    //MsgUpdateParams(Option<injective_std::types::cosmos::mint::v1beta1::MsgUpdateParams>),
+    MsgCommunityPoolSpend(Option<injective_std::types::cosmos::distribution::v1beta1::MsgCommunityPoolSpend>),
     MsgExecuteContract(Option<cosmos_sdk_proto::cosmwasm::wasm::v1::MsgExecuteContract>),
     MsgUpdateInstantiateConfig(Option<osmosis_std::types::cosmwasm::wasm::v1::MsgUpdateInstantiateConfig>),
     MsgSoftwareUpgrade(Option<cosmos_sdk_proto::cosmos::upgrade::v1beta1::MsgSoftwareUpgrade>),
@@ -169,13 +169,13 @@ impl ProposalV1Beta1Ext {
 
             "/cosmos.authz.v1beta1.MsgExec" => ProposalContent::MsgExec(
                 any.to_msg().ok(),
-            ),
-           /*"/cosmos.mint.v1beta1.MsgUpdateParams" => ProposalContent::MsgUpdateParams(
-                any.to_msg().ok(),
-            ),
-            "/cosmos.distribution.v1beta1.MsgCommunityPoolSpend"=> ProposalContent::MsgCommunityPoolSpend(
-                any.to_msg().ok(),
+            ),/*
+           "/cosmos.mint.v1beta1.MsgUpdateParams" => ProposalContent::MsgUpdateParams(
+                osmosis_prost::Message::decode(&any.value[..]).ok(),
             ),*/
+            "/cosmos.distribution.v1beta1.MsgCommunityPoolSpend"=> ProposalContent::MsgCommunityPoolSpend(
+                osmosis_prost::Message::decode(&any.value[..]).ok(),
+            ),
             "/cosmwasm.wasm.v1.MsgExecuteContract"=> ProposalContent::MsgExecuteContract(
                 any.to_msg().ok(),
             ),
