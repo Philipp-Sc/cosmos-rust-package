@@ -17,160 +17,55 @@ use cosmos_sdk_proto::cosmos::gov::v1::TallyResult;
 
 
 use serde::{Deserialize, Serialize};
+use crate::api::custom::types::gov::common::{ProposalContent, ProposalStatus};
+use crate::api::custom::types::gov::params_ext::ParamsExt;
 
-
-//use cosmos_sdk_proto::prost::Message;
-//use cosmos_sdk_proto::traits::MessageExt;
 
 use crate::api::custom::types::gov::tally_ext::TallyHelper;
+use crate::api::custom::types::gov::tally_v1beta1_ext::TallyResultV1Beta1Ext;
 use crate::api::custom::types::ProtoMessageWrapper;
+use crate::api::custom::types::staking::pool_ext::PoolExt;
 
 
-#[derive(
-    Deserialize, Serialize, strum_macros::Display, Debug, Clone, Eq, PartialEq, EnumIter, Hash,
-)]
-pub enum ProposalStatus {
-    /*
-    StatusNil           ProposalStatus = 0x00
-    StatusDepositPeriod ProposalStatus = 0x01  // Proposal is submitted. Participants can deposit on it but not vote
-    StatusVotingPeriod  ProposalStatus = 0x02  // MinDeposit is reached, participants can vote
-    StatusPassed        ProposalStatus = 0x03  // Proposal passed and successfully executed
-    StatusRejected      ProposalStatus = 0x04  // Proposal has been rejected
-    StatusFailed        ProposalStatus = 0x05  // Proposal passed but failed execution
-    */
-    StatusNil = 0x00,
-    StatusDepositPeriod = 0x01,
-    StatusVotingPeriod = 0x02,
-    StatusPassed = 0x03,
-    StatusRejected = 0x04,
-    StatusFailed = 0x05,
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct ProposalParams {
+    pub fraud_classification: Option<f64>,
+    pub tally_result: Option<TallyResultV1Beta1Ext>,
+    pub tallying_param: Option<ParamsExt>,
+    pub deposit_param: Option<ParamsExt>,
+    pub voting_param: Option<ParamsExt>,
+    pub blockchain_pool: Option<PoolExt>,
 }
 
-impl ProposalStatus {
-    // Function to convert i32 to the corresponding ProposalStatus
-    pub fn from_i32(value: i32) -> Option<Self> {
-        match value {
-            0x00 => Some(ProposalStatus::StatusNil),
-            0x01 => Some(ProposalStatus::StatusDepositPeriod),
-            0x02 => Some(ProposalStatus::StatusVotingPeriod),
-            0x03 => Some(ProposalStatus::StatusPassed),
-            0x04 => Some(ProposalStatus::StatusRejected),
-            0x05 => Some(ProposalStatus::StatusFailed),
-            _ => None, // Handle invalid values or return a default variant
+impl Hash for ProposalParams{
+    fn hash<H: Hasher>(&self, _state: &mut H) {}
+}
+
+impl ProposalParams {
+    pub fn new(
+        fraud_classification: Option<f64>,
+        tally_result: Option<TallyResultV1Beta1Ext>,
+        tallying_param: Option<ParamsExt>,
+        deposit_param: Option<ParamsExt>,
+        voting_param: Option<ParamsExt>,
+        blockchain_pool: Option<PoolExt>,
+    ) -> Self {
+        Self {
+            fraud_classification,
+            tally_result,
+            tallying_param,
+            deposit_param,
+            voting_param,
+            blockchain_pool,
         }
     }
-}
-
-impl From<ProposalStatus> for i32 {
-    fn from(status: ProposalStatus) -> i32 {
-        status as i32
-    }
-}
-
-#[derive(Deserialize, Serialize, strum_macros::Display, Debug, Clone, PartialEq, EnumIter)]
-pub enum ProposalTime {
-    SubmitTime,
-    DepositEndTime,
-    VotingStartTime,
-    VotingEndTime,
-    LatestTime,
-}
-
-impl ProposalStatus {
-    pub fn new(name: &str) -> ProposalStatus {
-        match name {
-            "nil" => ProposalStatus::StatusNil,
-            "passed" => ProposalStatus::StatusPassed,
-            "failed" => ProposalStatus::StatusFailed,
-            "rejected" => ProposalStatus::StatusRejected,
-            "deposit_period" => ProposalStatus::StatusDepositPeriod,
-            "voting_period" => ProposalStatus::StatusVotingPeriod,
-            _ => panic!(),
-        }
-    }
-    pub fn to_name(&self) -> &str {
-        match self {
-            ProposalStatus::StatusNil => {"nil"}
-            ProposalStatus::StatusDepositPeriod => {"deposit_period"}
-            ProposalStatus::StatusVotingPeriod => {"voting_period"}
-            ProposalStatus::StatusPassed => {"passed"}
-            ProposalStatus::StatusRejected => {"rejected"}
-            ProposalStatus::StatusFailed => {"failed"}
-        }
-    }
-    pub fn to_icon(&self) -> String {
-        match self {
-            ProposalStatus::StatusNil => "⚪".to_string(),
-            ProposalStatus::StatusPassed => "🟢".to_string(),
-            ProposalStatus::StatusFailed => "❌".to_string(),
-            ProposalStatus::StatusRejected => "🔴".to_string(),
-            ProposalStatus::StatusVotingPeriod => "🗳".to_string(),
-            ProposalStatus::StatusDepositPeriod => "💰".to_string(),
-        }
-    }
-}
-
-
-
-#[derive(strum_macros::Display, Debug, Clone, PartialEq)]
-pub enum ProposalContent {
-    MsgExec(Option<cosmos_sdk_proto::cosmos::authz::v1beta1::MsgExec>),
-    //MsgUpdateParams(Option<injective_std::types::cosmos::mint::v1beta1::MsgUpdateParams>),
-    MsgCommunityPoolSpend(Option<injective_std::types::cosmos::distribution::v1beta1::MsgCommunityPoolSpend>),
-    MsgExecuteContract(Option<cosmos_sdk_proto::cosmwasm::wasm::v1::MsgExecuteContract>),
-    MsgUpdateInstantiateConfig(Option<osmosis_std::types::cosmwasm::wasm::v1::MsgUpdateInstantiateConfig>),
-    MsgSoftwareUpgrade(Option<cosmos_sdk_proto::cosmos::upgrade::v1beta1::MsgSoftwareUpgrade>),
-    MsgInstantiateContract(Option<cosmos_sdk_proto::cosmwasm::wasm::v1::MsgInstantiateContract>),
-    TextProposal(Option<cosmos_sdk_proto::cosmos::gov::v1beta1::TextProposal>),
-    CommunityPoolSpendProposal(
-        Option<cosmos_sdk_proto::cosmos::distribution::v1beta1::CommunityPoolSpendProposal>,
-    ),
-    ParameterChangeProposal(
-        Option<cosmos_sdk_proto::cosmos::params::v1beta1::ParameterChangeProposal>,
-    ),
-    SoftwareUpgradeProposal(
-        Option<cosmos_sdk_proto::cosmos::upgrade::v1beta1::SoftwareUpgradeProposal>,
-    ),
-    ClientUpdateProposal(Option<cosmos_sdk_proto::ibc::core::client::v1::ClientUpdateProposal>),
-    UpdatePoolIncentivesProposal(
-        Option<osmosis_std::types::osmosis::poolincentives::v1beta1::UpdatePoolIncentivesProposal>,
-    ),
-    StoreCodeProposal(Option<cosmos_sdk_proto::cosmwasm::wasm::v1::StoreCodeProposal>),
-    RemoveSuperfluidAssetsProposal(
-        Option<osmosis_std::types::osmosis::superfluid::v1beta1::RemoveSuperfluidAssetsProposal>,
-    ),
-    InstantiateContractProposal(
-        Option<cosmos_sdk_proto::cosmwasm::wasm::v1::InstantiateContractProposal>,
-    ),
-    SetSuperfluidAssetsProposal(
-        Option<osmosis_std::types::osmosis::superfluid::v1beta1::SetSuperfluidAssetsProposal>,
-    ),
-    UpdateFeeTokenProposal(
-        Option<osmosis_std::types::osmosis::txfees::v1beta1::UpdateFeeTokenProposal>,
-    ),
-    ReplacePoolIncentivesProposal(
-        Option<osmosis_std::types::osmosis::poolincentives::v1beta1::ReplacePoolIncentivesProposal>,
-    ),
-    SetScalingFactorControllerProposal(
-        Option<osmosis_std::types::osmosis::gamm::v1beta1::SetScalingFactorControllerProposal>,
-    ),
-    MigrateContractProposal(Option<cosmos_sdk_proto::cosmwasm::wasm::v1::MigrateContractProposal>),
-    UpdateInstantiateConfigProposal(
-        Option<cosmos_sdk_proto::cosmwasm::wasm::v1::UpdateInstantiateConfigProposal>,
-    ),
-    SudoContractProposal(Option<cosmos_sdk_proto::cosmwasm::wasm::v1::SudoContractProposal>),
-    ExecuteContractProposal(Option<cosmos_sdk_proto::cosmwasm::wasm::v1::ExecuteContractProposal>),
-    UpdateAdminProposal(Option<cosmos_sdk_proto::cosmwasm::wasm::v1::UpdateAdminProposal>),
-    ClearAdminProposal(Option<cosmos_sdk_proto::cosmwasm::wasm::v1::ClearAdminProposal>),
-    PinCodesProposal(Option<cosmos_sdk_proto::cosmwasm::wasm::v1::PinCodesProposal>),
-    UnpinCodesProposal(Option<cosmos_sdk_proto::cosmwasm::wasm::v1::UnpinCodesProposal>),
-    UnknownProposalType(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Hash)]
 pub struct ProposalExt {
     pub blockchain: SupportedBlockchain,
     pub proposal: ProtoMessageWrapper<cosmos_sdk_proto::cosmos::gov::v1::Proposal>,
+    pub params: Option<ProposalParams>
 }
 
 impl ProposalExt {
@@ -181,6 +76,7 @@ impl ProposalExt {
         Self {
             blockchain: blockchain.clone(),
             proposal: ProtoMessageWrapper(proposal),
+            params: None
         }
     }
 
@@ -207,7 +103,12 @@ impl ProposalExt {
                 voting_end_time: proposal.voting_end_time,
                 metadata: "".to_string(),
             }),
+            params: None
         }
+    }
+
+    pub fn add_params(&mut self, params: ProposalParams){
+        self.params = Some(params);
     }
 
     pub fn object_to_hash(&self) -> u64 {
@@ -237,109 +138,7 @@ impl ProposalExt {
     }
 
     pub fn content(any: &cosmos_sdk_proto::Any) -> ProposalContent {
-        let a = any.type_url.to_string();
-        match a.as_ref() {
-            "/cosmos.authz.v1beta1.MsgExec" => ProposalContent::MsgExec(
-                any.to_msg().ok(),
-            ),
-            /*
-            "/cosmos.mint.v1beta1.MsgUpdateParams" => ProposalContent::MsgUpdateParams(
-                osmosis_prost::Message::decode(&any.value[..]).ok(),
-            ),*/
-            "/cosmos.distribution.v1beta1.MsgCommunityPoolSpend"=> ProposalContent::MsgCommunityPoolSpend(
-                osmosis_prost::Message::decode(&any.value[..]).ok(),
-            ),
-            "/cosmwasm.wasm.v1.MsgExecuteContract"=> ProposalContent::MsgExecuteContract(
-                any.to_msg().ok(),
-            ),
-            "/cosmwasm.wasm.v1.MsgUpdateInstantiateConfig" => ProposalContent::MsgUpdateInstantiateConfig(
-                osmosis_prost::Message::decode(&any.value[..]).ok(),
-            ),
-            "/cosmos.upgrade.v1beta1.MsgSoftwareUpgrade" => ProposalContent::MsgSoftwareUpgrade(
-                cosmos_sdk_proto::traits::Message::decode(&any.value[..]).ok(),
-            ),
-            "/cosmwasm.wasm.v1.MsgInstantiateContract" => ProposalContent::MsgInstantiateContract(
-                any.to_msg().ok(),
-            ),
-            "/cosmos.gov.v1beta1.TextProposal" => ProposalContent::TextProposal(
-                any.to_msg().ok(),
-            ),
-            "/cosmos.distribution.v1beta1.CommunityPoolSpendProposal" => {
-                ProposalContent::CommunityPoolSpendProposal(
-                    any.to_msg().ok(),
-                )
-            }
-            "/cosmos.params.v1beta1.ParameterChangeProposal" => {
-                ProposalContent::ParameterChangeProposal(
-                    any.to_msg().ok(),
-                )
-            }
-            "/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal" => {
-                ProposalContent::SoftwareUpgradeProposal(
-                    any.to_msg().ok(),
-                )
-            }
-            "/ibc.core.client.v1.ClientUpdateProposal" => ProposalContent::ClientUpdateProposal(
-                any.to_msg().ok(),
-            ),
-            "/osmosis.poolincentives.v1beta1.UpdatePoolIncentivesProposal" => {
-                ProposalContent::UpdatePoolIncentivesProposal(osmosis_prost::Message::decode(&any.value[..]).ok())
-            }
-            "/cosmwasm.wasm.v1.StoreCodeProposal" => ProposalContent::StoreCodeProposal(
-                any.to_msg().ok(),
-            ),
-            "/cosmwasm.wasm.v1.InstantiateContractProposal" => {
-                ProposalContent::InstantiateContractProposal(
-                    any.to_msg().ok(),
-                )
-            }
-            "/osmosis.superfluid.v1beta1.RemoveSuperfluidAssetsProposal" => {
-                ProposalContent::RemoveSuperfluidAssetsProposal(osmosis_prost::Message::decode(&any.value[..]).ok())
-            }
-            "/osmosis.superfluid.v1beta1.SetSuperfluidAssetsProposal" => {
-                ProposalContent::SetSuperfluidAssetsProposal(osmosis_prost::Message::decode(&any.value[..]).ok())
-            }
-            "/osmosis.txfees.v1beta1.UpdateFeeTokenProposal" => {
-                ProposalContent::UpdateFeeTokenProposal(osmosis_prost::Message::decode(&any.value[..]).ok())
-            }
-            "/osmosis.poolincentives.v1beta1.ReplacePoolIncentivesProposal" => {
-                ProposalContent::ReplacePoolIncentivesProposal(osmosis_prost::Message::decode(&any.value[..]).ok())
-            }
-            "/osmosis.gamm.v1beta1.SetScalingFactorControllerProposal" => {
-                ProposalContent::SetScalingFactorControllerProposal(osmosis_prost::Message::decode(&any.value[..]).ok())
-            }
-            "/cosmwasm.wasm.v1.MigrateContractProposal" => {
-                ProposalContent::MigrateContractProposal(
-                    any.to_msg().ok(),
-                )
-            }
-            "/cosmwasm.wasm.v1.UpdateInstantiateConfigProposal" => {
-                ProposalContent::UpdateInstantiateConfigProposal(
-                    any.to_msg().ok(),
-                )
-            }
-            "/cosmwasm.wasm.v1.SudoContractProposal" => ProposalContent::SudoContractProposal(
-                any.to_msg().ok(),
-            ),
-            "/cosmwasm.wasm.v1.ExecuteContractProposal" => {
-                ProposalContent::ExecuteContractProposal(
-                    any.to_msg().ok(),
-                )
-            }
-            "/cosmwasm.wasm.v1.UpdateAdminProposal" => ProposalContent::UpdateAdminProposal(
-                any.to_msg().ok(),
-            ),
-            "/cosmwasm.wasm.v1.ClearAdminProposal" => ProposalContent::ClearAdminProposal(
-                any.to_msg().ok(),
-            ),
-            "/cosmwasm.wasm.v1.PinCodesProposal" => ProposalContent::PinCodesProposal(
-                any.to_msg().ok(),
-            ),
-            "/cosmwasm.wasm.v1.UnpinCodesProposal" => ProposalContent::UnpinCodesProposal(
-                any.to_msg().ok(),
-            ),
-            &_ => ProposalContent::UnknownProposalType(a),
-        }
+        ProposalContent::new(any)
     }
 
     pub fn is_in_deposit_period(&self) -> bool {
@@ -363,141 +162,14 @@ impl ProposalExt {
     }
 
     pub fn get_description(&self) -> String {
-        self.messages_as_proposal_content().iter().map(|msg| {
-            match msg {
-                ProposalContent::MsgExec(Some(p)) => {
-                    p.grantee.to_owned()
-                }
-                ProposalContent::MsgExecuteContract(Some(p)) => {
-                    p.contract.to_owned()
-                }
-                ProposalContent::MsgUpdateInstantiateConfig(Some(p)) => {
-                    p.sender.to_owned()
-                }
-                ProposalContent::MsgSoftwareUpgrade(Some(p)) => {
-                    p.authority.to_owned()
-                }
-                ProposalContent::MsgInstantiateContract(Some(p)) => {
-                    p.label.to_owned()
-                }
-                ProposalContent::TextProposal(Some(p)) => {
-                    p.description.to_owned()
-                }
-                ProposalContent::CommunityPoolSpendProposal(Some(p)) => {
-                    p.description.to_owned()
-                }
-                ProposalContent::ParameterChangeProposal(Some(p)) => {
-                    p.description.to_owned()
-                }
-                ProposalContent::SoftwareUpgradeProposal(Some(p)) => {
-                    p.description.to_owned()
-                }
-                ProposalContent::ClientUpdateProposal(Some(p)) => {
-                    p.description.to_owned()
-                }
-                ProposalContent::UpdatePoolIncentivesProposal(Some(p)) => {
-                    p.description.to_owned()
-                }
-                ProposalContent::StoreCodeProposal(Some(p)) => {
-                    p.description.to_owned()
-                }
-                ProposalContent::RemoveSuperfluidAssetsProposal(Some(p)) => {
-                    p.description.to_owned()
-                }
-                ProposalContent::InstantiateContractProposal(Some(p)) => {
-                    p.description.to_owned()
-                }
-                ProposalContent::ReplacePoolIncentivesProposal(Some(p)) => {
-                    p.description.to_owned()
-                }
-                ProposalContent::SetSuperfluidAssetsProposal(Some(p)) => {
-                    p.description.to_owned()
-                }
-                ProposalContent::UpdateFeeTokenProposal(Some(p)) => {
-                    p.description.to_owned()
-                }
-                ProposalContent::MigrateContractProposal(Some(p)) => {
-                    p.description.to_owned()
-                }
-                ProposalContent::UpdateInstantiateConfigProposal(Some(p)) => {
-                    p.description.to_owned()
-                }
-                ProposalContent::SudoContractProposal(Some(p)) => {
-                    p.description.to_owned()
-                }
-                ProposalContent::ExecuteContractProposal(Some(p)) => {
-                    p.description.to_owned()
-                }
-                ProposalContent::UpdateAdminProposal(Some(p)) => {
-                    p.description.to_owned()
-                }
-                ProposalContent::ClearAdminProposal(Some(p)) => {
-                    p.description.to_owned()
-                }
-                ProposalContent::UnpinCodesProposal(Some(p)) => {
-                    p.description.to_owned()
-                }
-                ProposalContent::SetScalingFactorControllerProposal(Some(p)) => {
-                    p.description.to_owned()
-                }
-                ProposalContent::UnknownProposalType(type_url) =>
-                    format!("Error: UnknownProposalTypeError: ProposalContent can not be decoded for unknown ProposalType.\n\nType URL:\n{}", type_url)
-                ,
-                proposal_content =>
-                    format!("Error: ProposalContentDecodeError: Failed to decode ProposalContent: {}",proposal_content)
-                ,
-            }.replace("\\n","\n")
-        }).collect::<Vec<String>>().join("\n")
+        self.messages_as_proposal_content().iter().map(|msg| msg.get_description().replace("\\n","\n")).collect::<Vec<String>>().join("\n")
     }
     pub fn get_title(&self) -> String {
-        self.messages_as_proposal_content().iter().map(|msg| {
-            match msg {
-                ProposalContent::MsgExec(Some(p)) => {
-                    p.grantee.to_owned()
-                }
-                ProposalContent::MsgExecuteContract(Some(p)) => {
-                    p.contract.to_owned()
-                }
-                ProposalContent::MsgUpdateInstantiateConfig(Some(p)) => {
-                    p.sender.to_owned()
-                }
-                ProposalContent::MsgSoftwareUpgrade(Some(p)) => {
-                    p.authority.to_owned()
-                }
-                ProposalContent::MsgInstantiateContract(Some(p)) => {
-                    p.label.to_owned()
-                }
-                ProposalContent::TextProposal(Some(p)) => p.title.to_owned(),
-                ProposalContent::CommunityPoolSpendProposal(Some(p)) => p.title.to_owned(),
-                ProposalContent::ParameterChangeProposal(Some(p)) => p.title.to_owned(),
-                ProposalContent::SoftwareUpgradeProposal(Some(p)) => p.title.to_owned(),
-                ProposalContent::ClientUpdateProposal(Some(p)) => p.title.to_owned(),
-                ProposalContent::UpdatePoolIncentivesProposal(Some(p)) => p.title.to_owned(),
-                ProposalContent::StoreCodeProposal(Some(p)) => p.title.to_owned(),
-                ProposalContent::RemoveSuperfluidAssetsProposal(Some(p)) => p.title.to_owned(),
-                ProposalContent::InstantiateContractProposal(Some(p)) => p.title.to_owned(),
-                ProposalContent::ReplacePoolIncentivesProposal(Some(p)) => p.title.to_owned(),
-                ProposalContent::SetSuperfluidAssetsProposal(Some(p)) => p.title.to_owned(),
-                ProposalContent::UpdateFeeTokenProposal(Some(p)) => p.title.to_owned(),
-                ProposalContent::MigrateContractProposal(Some(p)) => p.title.to_owned(),
-                ProposalContent::UpdateInstantiateConfigProposal(Some(p)) => p.title.to_owned(),
-                ProposalContent::SudoContractProposal(Some(p)) => p.title.to_owned(),
-                ProposalContent::ExecuteContractProposal(Some(p)) => p.title.to_owned(),
-                ProposalContent::UpdateAdminProposal(Some(p)) => p.title.to_owned(),
-                ProposalContent::ClearAdminProposal(Some(p)) => p.title.to_owned(),
-                ProposalContent::UnpinCodesProposal(Some(p)) => p.title.to_owned(),
-                ProposalContent::SetScalingFactorControllerProposal(Some(p)) => {
-                    p.title.to_owned()
-                }
-                ProposalContent::UnknownProposalType(_type_url) => {
-                    "UnknownProposalTypeError".to_string()
-                }
-                _ => "ProposalContentDecodeError".to_string(),
-            }
-        }).collect::<Vec<String>>().join("\n")
+        self.messages_as_proposal_content().iter().map(|msg| msg.get_title()).collect::<Vec<String>>().join("\n")
     }
 
-    pub fn preview_msg(&self, fraud_classification: Option<f64>) -> String {
+
+    pub fn preview_msg(&self) -> String {
         let title = self.get_title();
 
         let proposal_id = self.get_proposal_id();
@@ -513,7 +185,7 @@ impl ProposalExt {
             title,
         );
 
-        if let Some(prediction) = fraud_classification {
+        if let Some(prediction) =  self.params.as_ref().map(|x| x.fraud_classification).flatten() {
             let label = if prediction >= 0.7 {
                 format!("🚨 {}", Self::map_prediction_to_string(prediction))
             } else if prediction >= 0.35 {

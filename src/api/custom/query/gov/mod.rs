@@ -7,7 +7,7 @@ use cosmos_sdk_proto::cosmos::base::query::v1beta1::PageRequest;
 use tonic::{Code};
 
 use crate::api::custom::types::gov::params_ext::ParamsExt;
-use crate::api::custom::types::gov::proposal_ext::{ProposalExt, ProposalStatus};
+use crate::api::custom::types::gov::proposal_ext::{ProposalExt};
 
 use crate::api::custom::types::gov::tally_ext::TallyResultExt;
 use crate::api::custom::types::gov::tally_v1beta1_ext::TallyResultV1Beta1Ext;
@@ -15,6 +15,7 @@ use crate::api::custom::types::staking::validators_ext::ValidatorsExt;
 
 
 use async_recursion::async_recursion;
+use crate::api::custom::types::gov::common::ProposalStatus;
 
 pub async fn get_validators_v1beta1(
     blockchain: SupportedBlockchain,
